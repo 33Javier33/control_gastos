@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Control de Gastos</title>
+  <style>
+    :root {
+      --primario: #2c3e50;
+      --secundario: #ecf0f1;
+      --acento: #3498db;
+      --positivo: #27ae60;
+      --negativo: #c0392b;
+    }
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: var(--secundario);
+      margin: 0;
+      padding: 20px;
+    }
+
+    h1, h2 {
+      color: var(--primario);
+      text-align: center;
+    }
+
+    .contenedor {
+      max-width: 850px;
+      margin: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    .seccion {
+      margin-bottom: 30px;
+    }
+
+    input, select {
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      margin: 5px 5px 0 0;
+    }
+
+    input[type="number"] { width: 100px; }
+
+    button {
+      background: var(--acento);
+      color: white;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    button:hover { background: #2980b9; }
+
+    .botonEliminar {
+      background: var(--negativo);
+      font-size: 14px;
+      padding: 4px 10px;
+      margin-left: 10px;
+    }
+
+    .botonEliminar:hover { background: #a93226; }
+
+    .botonEditarAbono {
+        background: #f39c12; /* Naranja para editar */
+        font-size: 14px;
+        padding: 4px 10px;
+        margin-left: 10px;
+    }
+
+    .botonEditarAbono:hover {
+        background: #e67e22; /* Naranja más oscuro */
+    }
+
+    .botonEliminarAbono { /* Nuevo estilo para eliminar abonos */
+        background: var(--negativo);
+        font-size: 14px;
+        padding: 4px 10px;
+        margin-left: 5px; /* Ajuste para separar de editar */
+    }
+
+    .botonEliminarAbono:hover {
+        background: #a93226;
+    }
+
+
+    ul { list-style-type: none; padding-left: 0; }
+
+    li {
+      padding: 8px;
+      background: #f9f9f9;
+      margin-bottom: 6px;
+      border-left: 6px solid var(--primario);
+      border-radius: 4px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .abono-item {
+        border-left-color: var(--positivo);
+        /* Alinea el contenido y los botones para el abono */
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%; /* Asegura que ocupe todo el ancho del LI padre */
+    }
+    
+    .abono-item > div:first-child {
+        flex-grow: 1; /* Permite que el texto del abono ocupe el espacio restante */
+    }
+
+
+    .resumen-total {
+      background: #e8f6ff;
+      padding: 12px;
+      border-left: 6px solid var(--acento);
+      margin-bottom: 10px;
+      border-radius: 6px;
+    }
+
+    .vermasBtn {
+      background: transparent;
+      color: var(--acento);
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+      margin-top: 6px;
+    }
+
+    .vermasBtn:hover {
+      text-decoration: underline;
+    }
+
+    #buscador {
+      margin-top: 10px;
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 15px; /* Espacio debajo del buscador */
+    }
+
+    /* Estilos para ocultar el monto en el selector si el gasto está pagado */
+    .gasto-pagado {
+        color: #888;
+        font-style: italic;
+    }
+
+    .gasto-pagado button {
+        background-color: #aaa;
+        cursor: not-allowed;
+    }
+
+    /* Estilos para los modales */
+    .modal {
+        display: none; /* Hidden by default */
+        position: fixed; /* Stay in place */
+        z-index: 1; /* Sit on top */
+        left: 0;
+        top: 0;
+        width: 100%; /* Full width */
+        height: 100%; /* Full height */
+        overflow: auto; /* Enable scroll if needed */
+        background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+        padding-top: 60px;
+    }
+
+    .modal-content {
+        background-color: #fefefe;
+        margin: 5% auto; /* 5% from the top and centered */
+        padding: 20px;
+        border: 1px solid #888;
+        width: 80%; /* Could be more or less, depending on screen size */
+        max-width: 500px;
+        border-radius: 8px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        position: relative;
+    }
+
+    .close-button {
+        color: #aaa;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+        position: absolute;
+        top: 10px;
+        right: 20px;
+    }
+
+    .close-button:hover,
+    .close-button:focus {
+        color: black;
+        text-decoration: none;
+        cursor: pointer;
+    }
+
+    .modal-content label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+        color: #555;
+    }
+
+    .modal-content input[type="date"],
+    .modal-content input[type="number"] {
+        width: calc(100% - 16px); /* Ajuste para el padding */
+        padding: 8px;
+        margin-bottom: 15px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+    }
+
+    .modal-content button[type="submit"] {
+        width: auto;
+        padding: 10px 20px;
+        margin-top: 10px;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="contenedor">
+    <h1>💸 Control de Gastos</h1>
+
+    <div class="seccion">
+      <h2>➕ Agregar Gasto</h2>
+      <input type="text" id="descripcion" placeholder="Descripción" />
+      <input type="number" id="monto" placeholder="Monto" />
+      <button onclick="agregarGasto()">Agregar</button>
+    </div>
+
+    <div class="seccion resumen-total" id="resumenTotales"></div>
+
+    <div class="seccion">
+      <h2>📋 Gastos Pendientes</h2>
+      <ul id="listaGastos"></ul>
+    </div>
+
+    <div class="seccion">
+      <h2>💳 Abonar</h2>
+      <select id="gastoSeleccionado"></select>
+      <input type="number" id="abono" placeholder="Monto" />
+      <button onclick="abonar()">Registrar Abono</button>
+    </div>
+
+    <div class="seccion">
+      <h2>📆 Historial de Abonos</h2>
+      <input type="text" id="buscador" placeholder="🔍 Buscar por nombre o fecha">
+      <ul id="historialAbonos"></ul>
+    </div>
+  </div>
+
+  <div id="editAbonoModal" class="modal">
+    <div class="modal-content">
+      <span class="close-button" id="closeEditAbonoModal">&times;</span>
+      <h2>Editar Abono</h2>
+      <form id="editarAbonoForm">
+        <label for="editarAbonoFecha">Fecha:</label>
+        <input type="date" id="editarAbonoFecha" required><br>
+        <label for="editarAbonoMonto">Monto:</label>
+        <input type="number" id="editarAbonoMonto" required><br>
+        <button type="submit">Guardar Cambios</button>
+      </form>
+    </div>
+  </div>
+
+
+  <script>
+    const STORAGE_KEY = "gastosGuardados";
+    let gastos = [];
+
+    // Variables para guardar el índice del gasto y abono que se están editando
+    let currentGastoIndex = -1;
+    let currentAbonoIndex = -1;
+    let oldAbonoMonto = 0; // Para guardar el monto original al editar
+
+    // --- Función de Utilidad para Formatear Moneda ---
+    function formatearMoneda(cantidad) {
+      // Ajusta las opciones para el formato de moneda chilena
+      return new Intl.NumberFormat('es-CL', {
+        style: 'currency',
+        currency: 'CLP',
+        minimumFractionDigits: 0, // No mostrar decimales para pesos chilenos si no hay centavos
+        maximumFractionDigits: 0, // O 2 si trabajas con centavos
+      }).format(cantidad);
+    }
+
+    // --- Funciones de Modal ---
+    function abrirModal(id) {
+        document.getElementById(id).style.display = 'block';
+    }
+
+    function cerrarModal(id) {
+        document.getElementById(id).style.display = 'none';
+    }
+
+    window.onload = () => {
+      const datos = localStorage.getItem(STORAGE_KEY);
+      if (datos) gastos = JSON.parse(datos);
+      actualizarVista();
+      document.getElementById("buscador").addEventListener("input", actualizarVista); // Actualiza al escribir en el buscador
+
+      // Event Listeners para el nuevo modal de edición de abonos
+      document.getElementById("closeEditAbonoModal").addEventListener("click", () => cerrarModal('editAbonoModal'));
+      document.getElementById("editarAbonoForm").addEventListener("submit", (e) => {
+          e.preventDefault();
+          guardarEdicionAbono();
+      });
+    };
+
+    function guardarDatos() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(gastos));
+    }
+
+    function agregarGasto() {
+      const descripcionInput = document.getElementById("descripcion");
+      const montoInput = document.getElementById("monto");
+      const descripcion = descripcionInput.value.trim().toLowerCase();
+      const monto = parseFloat(montoInput.value);
+
+      if (!descripcion) {
+        alert("Por favor, ingresa una descripción para el gasto.");
+        return;
+      }
+      if (isNaN(monto) || monto <= 0) {
+        alert("Por favor, ingresa un monto válido y positivo.");
+        return;
+      }
+
+      const existente = gastos.find(g => g.descripcion.toLowerCase() === descripcion);
+      if (existente) {
+        existente.deuda += monto;
+        alert(`Gasto "${descripcion}" actualizado. Nueva deuda: ${formatearMoneda(existente.deuda)}.`);
+      } else {
+        gastos.push({ descripcion, deuda: monto, abonos: [], expandido: false });
+        alert(`Gasto "${descripcion}" agregado con deuda de ${formatearMoneda(monto)}.`);
+      }
+      descripcionInput.value = "";
+      montoInput.value = "";
+      guardarDatos();
+      actualizarVista();
+    }
+
+    function abonar() {
+      const selector = document.getElementById("gastoSeleccionado");
+      const abonoInput = document.getElementById("abono");
+      const index = selector.value;
+      const abonoMonto = parseFloat(abonoInput.value);
+
+      if (index === "" || !gastos[index]) {
+        alert("Por favor, selecciona un gasto para abonar.");
+        return;
+      }
+
+      if (isNaN(abonoMonto) || abonoMonto <= 0) {
+        alert("Por favor, ingresa un monto de abono válido y positivo.");
+        return;
+      }
+      
+      const gasto = gastos[index];
+      if (gasto.deuda <= 0) {
+          alert(`El gasto "${gasto.descripcion}" ya está completamente pagado.`);
+          abonoInput.value = ""; // Limpiar el input de abono
+          return;
+      }
+
+      const fecha = new Date().toLocaleString('es-CL', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }); // Formato de fecha y hora
+      
+      gasto.abonos.push({ monto: abonoMonto, fecha });
+      gasto.deuda -= abonoMonto;
+      
+      if (gasto.deuda < 0) {
+          alert(`¡Has abonado más de lo necesario! El exceso de ${formatearMoneda(Math.abs(gasto.deuda))} se considera pagado.`);
+          gasto.deuda = 0; // Asegurarse de que la deuda no sea negativa
+      } else {
+          alert(`Abono de ${formatearMoneda(abonoMonto)} registrado para "${gasto.descripcion}". Deuda pendiente: ${formatearMoneda(gasto.deuda)}`);
+      }
+
+      abonoInput.value = ""; // Limpiar el input de abono
+      guardarDatos();
+      actualizarVista();
+    }
+
+    function eliminarGasto(i) {
+      if (confirm(`¿Estás seguro de que quieres eliminar el gasto "${gastos[i].descripcion}" y todo su historial?`)) {
+        gastos.splice(i, 1);
+        guardarDatos();
+        actualizarVista();
+      }
+    }
+
+    function toggleHistorial(i) {
+      gastos[i].expandido = !gastos[i].expandido;
+      actualizarVista();
+    }
+
+    // --- Funciones para Editar Abono ---
+    function abrirModalEditarAbono(gastoIndex, abonoIndex) {
+        currentGastoIndex = gastoIndex;
+        currentAbonoIndex = abonoIndex;
+        const abono = gastos[gastoIndex].abonos[abonoIndex];
+
+        // Convertir la fecha del abono a formato YYYY-MM-DD para el input type="date"
+        // La fecha original está en formato local string, necesitamos parsearla.
+        const fechaObj = new Date(abono.fecha);
+        const year = fechaObj.getFullYear();
+        const month = String(fechaObj.getMonth() + 1).padStart(2, '0');
+        const day = String(fechaObj.getDate()).padStart(2, '0');
+        const formattedDate = `${year}-${month}-${day}`;
+        
+        document.getElementById("editarAbonoFecha").value = formattedDate;
+        document.getElementById("editarAbonoMonto").value = abono.monto;
+        oldAbonoMonto = abono.monto; // Guardar el monto antiguo para recalcular deuda
+        abrirModal('editAbonoModal');
+    }
+
+    function guardarEdicionAbono() {
+        const nuevaFecha = document.getElementById("editarAbonoFecha").value;
+        const nuevoMonto = parseFloat(document.getElementById("editarAbonoMonto").value);
+
+        if (isNaN(nuevoMonto) || nuevoMonto <= 0) {
+            alert("Por favor, ingresa un monto válido y positivo para el abono.");
+            return;
+        }
+
+        const gasto = gastos[currentGastoIndex];
+        const abono = gasto.abonos[currentAbonoIndex];
+
+        // Recalcular la deuda del gasto
+        gasto.deuda += oldAbonoMonto; // Revertir el monto antiguo
+        gasto.deuda -= nuevoMonto;   // Aplicar el nuevo monto
+
+        // Asegurarse de que la deuda no sea negativa
+        if (gasto.deuda < 0) {
+            alert(`Ajuste de deuda: El gasto "${gasto.descripcion}" ha sido saldado y hay un exceso de ${formatearMoneda(Math.abs(gasto.deuda))}.`);
+            gasto.deuda = 0;
+        } else {
+            alert(`Abono editado. Nueva deuda para "${gasto.descripcion}": ${formatearMoneda(gasto.deuda)}.`);
+        }
+        
+        // Actualizar el abono con la nueva fecha y monto
+        abono.fecha = new Date(nuevaFecha).toLocaleString('es-CL', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+        abono.monto = nuevoMonto;
+
+        guardarDatos();
+        actualizarVista();
+        cerrarModal('editAbonoModal');
+    }
+
+    // --- Función para Eliminar Abono Individual ---
+    function eliminarAbono(gastoIndex, abonoIndex) {
+        if (confirm(`¿Estás seguro de que quieres eliminar este abono? Se recalculará la deuda del gasto.`)) {
+            const gasto = gastos[gastoIndex];
+            const abonoAEliminar = gasto.abonos[abonoIndex];
+
+            gasto.deuda += abonoAEliminar.monto; // Sumar el monto del abono eliminado de nuevo a la deuda
+
+            gasto.abonos.splice(abonoIndex, 1); // Eliminar el abono del array
+
+            guardarDatos();
+            actualizarVista();
+            alert(`Abono eliminado. La deuda para "${gasto.descripcion}" se ha actualizado a ${formatearMoneda(gasto.deuda)}.`);
+        }
+    }
+
+
+    function actualizarVista() {
+      const listaGastos = document.getElementById("listaGastos");
+      const selector = document.getElementById("gastoSeleccionado");
+      const historial = document.getElementById("historialAbonos");
+      const resumen = document.getElementById("resumenTotales");
+      const filtro = document.getElementById("buscador").value.toLowerCase();
+
+      listaGastos.innerHTML = "";
+      selector.innerHTML = ""; // Limpiar el selector para volver a llenarlo
+      historial.innerHTML = "";
+
+      let totalPagadoGeneral = 0;
+      let totalPendienteGeneral = 0;
+
+      // Primero, poblar el selector y calcular totales
+      gastos.forEach((g, i) => {
+        const pagado = g.abonos.reduce((sum, a) => sum + a.monto, 0);
+        totalPagadoGeneral += pagado;
+        totalPendienteGeneral += g.deuda;
+
+        // Opción para el selector de abonos
+        const option = document.createElement("option");
+        option.value = i;
+        option.textContent = `${g.descripcion} (Pendiente: ${formatearMoneda(g.deuda)})`;
+        if (g.deuda <= 0) {
+            option.disabled = true; // Deshabilita la opción si no hay deuda
+            option.classList.add('gasto-pagado'); // Clase para estilizar
+        }
+        selector.appendChild(option);
+      });
+
+      // Luego, poblar la lista de gastos pendientes y el historial
+      gastos.forEach((g, i) => {
+        const pagado = g.abonos.reduce((sum, a) => sum + a.monto, 0);
+
+        const li = document.createElement("li");
+        // Añadir una clase si el gasto está pagado
+        if (g.deuda <= 0) {
+            li.classList.add('gasto-pagado');
+        }
+        li.innerHTML = `
+          <div>
+            <strong>${g.descripcion}</strong><br>
+            Pagado: ${formatearMoneda(pagado)}<br>
+            Pendiente: ${formatearMoneda(g.deuda)}
+            ${g.abonos.length > 0 ? // Solo mostrar botón si hay abonos
+                `<br><button class="vermasBtn" onclick="toggleHistorial(${i})">
+                  ${g.expandido ? "Ver menos" : "Ver más"}
+                </button>` : ''
+            }
+          </div>
+          <button class="botonEliminar" onclick="eliminarGasto(${i})">🗑️</button>
+        `;
+        listaGastos.appendChild(li);
+
+        // Historial de Abonos
+        if (g.expandido) {
+          const abonosFiltrados = g.abonos.filter(ab => {
+              const textoBusqueda = `${g.descripcion} ${ab.fecha} ${formatearMoneda(ab.monto)}`.toLowerCase();
+              return textoBusqueda.includes(filtro);
+          });
+          
+          if (abonosFiltrados.length > 0) {
+            abonosFiltrados.forEach((ab, abonoIndex) => { // Añadir abonoIndex aquí
+              const item = document.createElement("li");
+              item.className = "abono-item"; // Usar solo abono-item
+              item.innerHTML = `
+                <div>${g.descripcion}: abonaste ${formatearMoneda(ab.monto)} el ${ab.fecha}</div>
+                <div>
+                    <button class="botonEditarAbono" onclick="abrirModalEditarAbono(${i}, ${abonoIndex})">✏️</button>
+                    <button class="botonEliminarAbono" onclick="eliminarAbono(${i}, ${abonoIndex})">🗑️</button>
+                </div>
+              `;
+              historial.appendChild(item);
+            });
+          } else if (filtro && g.abonos.length > 0) {
+              const item = document.createElement("li");
+              item.className = "abono-item";
+              item.textContent = `No se encontraron abonos para "${g.descripcion}" con el filtro "${filtro}".`;
+              historial.appendChild(item);
+          }
+        }
+      });
+
+      // Si no hay gastos expandidos, pero hay filtro y abonos en general, mostrar todos los abonos filtrados
+      if (!gastos.some(g => g.expandido) && filtro) {
+          let abonosGlobalesFiltrados = [];
+          gastos.forEach((g, gastoIdx) => { // Añadir gastoIdx para pasar al editor
+              g.abonos.forEach((ab, abonoIdx) => {
+                  const textoBusqueda = `${g.descripcion} ${ab.fecha} ${formatearMoneda(ab.monto)}`.toLowerCase();
+                  if (textoBusqueda.includes(filtro)) {
+                      abonosGlobalesFiltrados.push({
+                          gastoIndex: gastoIdx, // Guardar índices para edición
+                          abonoIndex: abonoIdx,
+                          descripcion: g.descripcion,
+                          monto: ab.monto,
+                          fecha: ab.fecha
+                      });
+                  }
+              });
+          });
+          
+          if (abonosGlobalesFiltrados.length > 0) {
+              abonosGlobalesFiltrados.forEach(ab => {
+                  const item = document.createElement("li");
+                  item.className = "abono-item";
+                  item.innerHTML = `
+                    <div>${ab.descripcion}: abonaste ${formatearMoneda(ab.monto)} el ${ab.fecha}</div>
+                    <div>
+                        <button class="botonEditarAbono" onclick="abrirModalEditarAbono(${ab.gastoIndex}, ${ab.abonoIndex})">✏️</button>
+                        <button class="botonEliminarAbono" onclick="eliminarAbono(${ab.gastoIndex}, ${ab.abonoIndex})">🗑️</button>
+                    </div>
+                  `;
+                  historial.appendChild(item);
+              });
+          } else if (gastos.some(g => g.abonos.length > 0)) { // Solo si hay abonos en general
+              const item = document.createElement("li");
+              item.className = "abono-item";
+              item.textContent = `No se encontraron abonos con el filtro "${filtro}".`;
+              historial.appendChild(item);
+          }
+      } else if (!gastos.some(g => g.expandido) && !filtro && gastos.some(g => g.abonos.length > 0)) {
+          // Si no hay expandidos y no hay filtro, y hay abonos, no mostrar nada en el historial por defecto
+          // Esto evita una lista gigante si el usuario no ha expandido nada.
+          // Si se desea mostrar todo el historial por defecto, simplemente quitar este "else if"
+      }
+
+
+      // --- Actualización del Resumen General ---
+      resumen.innerHTML = `
+        <strong>🧾 Resumen General:</strong><br>
+        Total pagado: <span style="color: var(--positivo)">${formatearMoneda(totalPagadoGeneral)}</span><br>
+        Total pendiente: <span style="color: var(--negativo)">${formatearMoneda(totalPendienteGeneral)}</span>
+      `;
+    }
+  </script>
+</body>
+</html>
