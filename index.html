@@ -1,611 +1,284 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Control de Gastos</title>
-  <style>
-    :root {
-      --primario: #2c3e50;
-      --secundario: #ecf0f1;
-      --acento: #3498db;
-      --positivo: #27ae60;
-      --negativo: #c0392b;
-    }
-    * { box-sizing: border-box; }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Wallet Master - Ordenable</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #4f46e5; --income: #10b981; --expense: #ef4444; --debt: #f59e0b;
+            --bg: #f8fafc; --card-bg: #ffffff; --text-main: #1e293b; --text-muted: #64748b;
+            --radius: 16px;
+        }
 
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background: var(--secundario);
-      margin: 0;
-      padding: 20px;
-    }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
+        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text-main); margin: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 
-    h1, h2 {
-      color: var(--primario);
-      text-align: center;
-    }
+        /* HEADER */
+        header { background: var(--primary); color: white; padding: 25px 20px 45px; text-align: center; border-radius: 0 0 30px 30px; position: relative; box-shadow: 0 10px 20px -10px rgba(79,70,229,0.4); }
+        .nav-btn { position: absolute; top: 20px; background: rgba(255,255,255,0.15); border: none; color: white; padding: 12px; border-radius: 14px; font-size: 1rem; backdrop-filter: blur(5px); }
+        .btn-left { left: 20px; } .btn-right { right: 20px; }
+        header h1 { font-size: 2.2rem; margin: 5px 0 0; font-weight: 800; letter-spacing: -1px; }
 
-    .contenedor {
-      max-width: 850px;
-      margin: auto;
-      background: white;
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    }
+        #archive-banner { background: #1e293b; color: white; padding: 10px; text-align: center; font-size: 0.75rem; display: none; font-weight: 600; }
 
-    .seccion {
-      margin-bottom: 30px;
-    }
+        /* RESUMEN */
+        .summary-grid { display: flex; gap: 10px; padding: 0 15px; margin-top: -25px; z-index: 5; }
+        .stat-card { flex: 1; background: var(--card-bg); padding: 12px 5px; border-radius: var(--radius); text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 2.5px solid transparent; transition: 0.2s; }
+        .stat-card.active { border-color: var(--primary); transform: translateY(-3px); }
+        .stat-card b { display: block; font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 2px; }
+        .stat-card span { font-size: 0.9rem; font-weight: 800; }
 
-    input, select {
-      padding: 8px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      margin: 5px 5px 0 0;
-    }
+        /* CATEGORÍAS FILTRO */
+        .category-bar { display: flex; gap: 8px; overflow-x: auto; padding: 15px 20px; scrollbar-width: none; }
+        .category-bar::-webkit-scrollbar { display: none; }
+        .chip { background: white; padding: 8px 16px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); border: 1.5px solid #e2e8f0; white-space: nowrap; }
+        .chip.active { background: var(--primary); color: white; border-color: var(--primary); box-shadow: 0 4px 12px rgba(79,70,229,0.3); }
 
-    input[type="number"] { width: 100px; }
+        /* MOVIMIENTOS */
+        .main-feed { flex: 1; overflow-y: auto; padding: 0 20px 100px; }
+        .item-card { background: var(--card-bg); padding: 16px; border-radius: var(--radius); margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
+        .tag-pill { display: inline-block; font-size: 0.65rem; background: #f1f5f9; padding: 2px 8px; border-radius: 6px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-top: 4px; }
+        .amount-text { font-weight: 800; font-size: 1rem; }
+        .amount-text.plus { color: var(--income); } .amount-text.minus { color: var(--expense); } .amount-text.debt { color: var(--debt); }
 
-    button {
-      background: var(--acento);
-      color: white;
-      padding: 8px 16px;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      margin-top: 10px;
-    }
+        /* ACCIONES */
+        .actions { position: fixed; bottom: 25px; right: 25px; display: flex; flex-direction: column; gap: 12px; z-index: 50; }
+        .btn-fab { width: 60px; height: 60px; border-radius: 50%; border: none; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.5rem; box-shadow: 0 8px 20px rgba(79,70,229,0.3); }
 
-    button:hover { background: #2980b9; }
+        /* MODALES */
+        .modal { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); display: none; align-items: flex-end; z-index: 100; backdrop-filter: blur(3px); }
+        .modal-content { background: white; width: 100%; padding: 25px; border-radius: 30px 30px 0 0; max-height: 90vh; overflow-y: auto; animation: slideUp 0.3s ease-out; }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        
+        input, select, .btn-full { width: 100%; padding: 16px; margin-bottom: 12px; border-radius: 14px; border: 1px solid #e2e8f0; font-size: 1rem; }
+        .btn-full { border: none; font-weight: 800; transition: 0.2s; }
+        .btn-primary { background: var(--primary); color: white; }
 
-    .botonEliminar {
-      background: var(--negativo);
-      font-size: 14px;
-      padding: 4px 10px;
-      margin-left: 10px;
-    }
-
-    .botonEliminar:hover { background: #a93226; }
-
-    .botonEditarAbono {
-        background: #f39c12; /* Naranja para editar */
-        font-size: 14px;
-        padding: 4px 10px;
-        margin-left: 10px;
-    }
-
-    .botonEditarAbono:hover {
-        background: #e67e22; /* Naranja más oscuro */
-    }
-
-    .botonEliminarAbono { /* Nuevo estilo para eliminar abonos */
-        background: var(--negativo);
-        font-size: 14px;
-        padding: 4px 10px;
-        margin-left: 5px; /* Ajuste para separar de editar */
-    }
-
-    .botonEliminarAbono:hover {
-        background: #a93226;
-    }
-
-
-    ul { list-style-type: none; padding-left: 0; }
-
-    li {
-      padding: 8px;
-      background: #f9f9f9;
-      margin-bottom: 6px;
-      border-left: 6px solid var(--primario);
-      border-radius: 4px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .abono-item {
-        border-left-color: var(--positivo);
-        /* Alinea el contenido y los botones para el abono */
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        width: 100%; /* Asegura que ocupe todo el ancho del LI padre */
-    }
-    
-    .abono-item > div:first-child {
-        flex-grow: 1; /* Permite que el texto del abono ocupe el espacio restante */
-    }
-
-
-    .resumen-total {
-      background: #e8f6ff;
-      padding: 12px;
-      border-left: 6px solid var(--acento);
-      margin-bottom: 10px;
-      border-radius: 6px;
-    }
-
-    .vermasBtn {
-      background: transparent;
-      color: var(--acento);
-      border: none;
-      cursor: pointer;
-      font-weight: bold;
-      margin-top: 6px;
-    }
-
-    .vermasBtn:hover {
-      text-decoration: underline;
-    }
-
-    #buscador {
-      margin-top: 10px;
-      width: 100%;
-      padding: 8px;
-      margin-bottom: 15px; /* Espacio debajo del buscador */
-    }
-
-    /* Estilos para ocultar el monto en el selector si el gasto está pagado */
-    .gasto-pagado {
-        color: #888;
-        font-style: italic;
-    }
-
-    .gasto-pagado button {
-        background-color: #aaa;
-        cursor: not-allowed;
-    }
-
-    /* Estilos para los modales */
-    .modal {
-        display: none; /* Hidden by default */
-        position: fixed; /* Stay in place */
-        z-index: 1; /* Sit on top */
-        left: 0;
-        top: 0;
-        width: 100%; /* Full width */
-        height: 100%; /* Full height */
-        overflow: auto; /* Enable scroll if needed */
-        background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
-        padding-top: 60px;
-    }
-
-    .modal-content {
-        background-color: #fefefe;
-        margin: 5% auto; /* 5% from the top and centered */
-        padding: 20px;
-        border: 1px solid #888;
-        width: 80%; /* Could be more or less, depending on screen size */
-        max-width: 500px;
-        border-radius: 8px;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-        position: relative;
-    }
-
-    .close-button {
-        color: #aaa;
-        float: right;
-        font-size: 28px;
-        font-weight: bold;
-        position: absolute;
-        top: 10px;
-        right: 20px;
-    }
-
-    .close-button:hover,
-    .close-button:focus {
-        color: black;
-        text-decoration: none;
-        cursor: pointer;
-    }
-
-    .modal-content label {
-        display: block;
-        margin-bottom: 5px;
-        font-weight: bold;
-        color: #555;
-    }
-
-    .modal-content input[type="date"],
-    .modal-content input[type="number"] {
-        width: calc(100% - 16px); /* Ajuste para el padding */
-        padding: 8px;
-        margin-bottom: 15px;
-        border: 1px solid #ccc;
-        border-radius: 6px;
-    }
-
-    .modal-content button[type="submit"] {
-        width: auto;
-        padding: 10px 20px;
-        margin-top: 10px;
-    }
-
-  </style>
+        /* GESTIÓN CATEGORÍAS ORDENABLES */
+        .cat-manager-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+        .cat-card { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0; }
+        .cat-card span { font-weight: 700; font-size: 0.9rem; flex: 1; }
+        .cat-controls { display: flex; align-items: center; gap: 10px; }
+        .btn-order { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 6px; color: var(--text-muted); font-size: 0.8rem; }
+        .btn-del-cat { color: var(--expense); font-size: 1.1rem; border: none; background: none; margin-left: 5px; }
+    </style>
 </head>
 <body>
-  <div class="contenedor">
-    <h1>💸 Control de Gastos</h1>
 
-    <div class="seccion">
-      <h2>➕ Agregar Gasto</h2>
-      <input type="text" id="descripcion" placeholder="Descripción" />
-      <input type="number" id="monto" placeholder="Monto" />
-      <button onclick="agregarGasto()">Agregar</button>
+    <div id="archive-banner">MODO LECTURA ACTIVO <span onclick="exitArchiveMode()" style="text-decoration:underline; margin-left:8px; color:#93c5fd;">[SALIR]</span></div>
+
+    <header id="app-header">
+        <button class="nav-btn btn-left" onclick="openModal('modal-history')"><i class="fa-solid fa-clock-rotate-left"></i></button>
+        <button class="nav-btn btn-right" onclick="openModal('modal-archive')"><i class="fa-solid fa-box-archive"></i></button>
+        <span style="font-weight: 600;">Saldo Total</span>
+        <h1 id="balance-display">$0</h1>
+    </header>
+
+    <div class="summary-grid">
+        <div class="stat-card" id="card-plus" onclick="setFilter('plus')"><b>Ingresos</b><span id="total-inc" style="color:var(--income)">$0</span></div>
+        <div class="stat-card" id="card-minus" onclick="setFilter('minus')"><b>Gastos</b><span id="total-exp" style="color:var(--expense)">$0</span></div>
+        <div class="stat-card" id="card-debt" onclick="setFilter('debt')"><b>Deudas</b><span id="total-deb" style="color:var(--debt)">$0</span></div>
     </div>
 
-    <div class="seccion resumen-total" id="resumenTotales"></div>
+    <div id="filter-container" class="category-bar"></div>
 
-    <div class="seccion">
-      <h2>📋 Gastos Pendientes</h2>
-      <ul id="listaGastos"></ul>
+    <div class="main-feed">
+        <div id="transaction-list"></div>
     </div>
 
-    <div class="seccion">
-      <h2>💳 Abonar</h2>
-      <select id="gastoSeleccionado"></select>
-      <input type="number" id="abono" placeholder="Monto" />
-      <button onclick="abonar()">Registrar Abono</button>
+    <div class="actions" id="main-actions">
+        <button class="btn-fab" style="background:white; color:var(--primary)" onclick="openModal('modal-categories')"><i class="fa-solid fa-tags"></i></button>
+        <button class="btn-fab" style="background:var(--primary)" onclick="openModal('modal-add')"><i class="fa-solid fa-plus"></i></button>
     </div>
 
-    <div class="seccion">
-      <h2>📆 Historial de Abonos</h2>
-      <input type="text" id="buscador" placeholder="🔍 Buscar por nombre o fecha">
-      <ul id="historialAbonos"></ul>
+    <!-- MODAL: GESTIÓN CATEGORÍAS (ORDENABLE) -->
+    <div class="modal" id="modal-categories" onclick="closeModal('modal-categories')">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h3 style="margin-bottom: 10px;">Categorías</h3>
+            <p style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 15px;">Usa las flechas para reordenar la lista.</p>
+            
+            <div style="display:flex; gap:8px; margin-bottom:20px;">
+                <input type="text" id="new-cat-name" placeholder="Nombre..." style="margin:0;">
+                <select id="new-cat-type" style="width:40%; margin:0;"><option value="inc">Ingreso</option><option value="exp">Gasto</option></select>
+                <button onclick="addCat()" style="background:var(--primary); color:white; border:none; padding:0 15px; border-radius:12px; font-size:1.2rem;">+</button>
+            </div>
+
+            <p style="font-size: 0.7rem; font-weight: 800; color:var(--income); text-transform: uppercase;">Ingresos</p>
+            <div id="cat-list-inc" class="cat-manager-list"></div>
+
+            <p style="font-size: 0.7rem; font-weight: 800; color:var(--expense); text-transform: uppercase;">Gastos</p>
+            <div id="cat-list-exp" class="cat-manager-list"></div>
+
+            <button class="btn-full btn-primary" style="background:#94a3b8; margin-top:10px;" onclick="closeModal('modal-categories')">Cerrar</button>
+        </div>
     </div>
-  </div>
 
-  <div id="editAbonoModal" class="modal">
-    <div class="modal-content">
-      <span class="close-button" id="closeEditAbonoModal">&times;</span>
-      <h2>Editar Abono</h2>
-      <form id="editarAbonoForm">
-        <label for="editarAbonoFecha">Fecha:</label>
-        <input type="date" id="editarAbonoFecha" required><br>
-        <label for="editarAbonoMonto">Monto:</label>
-        <input type="number" id="editarAbonoMonto" required><br>
-        <button type="submit">Guardar Cambios</button>
-      </form>
+    <!-- MODAL: AGREGAR REGISTRO -->
+    <div class="modal" id="modal-add" onclick="closeModal('modal-add')">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h3>Nuevo Registro</h3>
+            <form id="tx-form">
+                <input type="text" id="tx-text" placeholder="Concepto" required>
+                <input type="text" inputmode="numeric" id="tx-amount" placeholder="Monto" required>
+                <select id="tx-type" onchange="refreshFormCats()">
+                    <option value="plus">Ingreso (+)</option>
+                    <option value="minus" selected>Gasto (-)</option>
+                    <option value="debt">Deuda (Debo)</option>
+                </select>
+                <select id="tx-category"></select>
+                <button type="submit" class="btn-full btn-primary">Guardar</button>
+                <button type="button" class="btn-full" style="background:none; color:#94a3b8;" onclick="closeModal('modal-add')">Cancelar</button>
+            </form>
+        </div>
     </div>
-  </div>
 
+    <!-- OTROS MODALES -->
+    <div class="modal" id="modal-archive" onclick="closeModal('modal-archive')"><div class="modal-content" onclick="event.stopPropagation()"><h3>Cierre de Mes</h3><button class="btn-full btn-primary" style="background:var(--income)" onclick="processArchive()">Confirmar Cierre</button><button class="btn-full" style="background:none; color:#94a3b8;" onclick="closeModal('modal-archive')">Cancelar</button></div></div>
+    <div class="modal" id="modal-history" onclick="closeModal('modal-history')"><div class="modal-content" onclick="event.stopPropagation()"><h3>Archivos</h3><div id="archives-list"></div><input type="file" id="import-json" accept=".json" style="margin-top:10px;"><button class="btn-full" style="background:#94a3b8; margin-top:20px;" onclick="closeModal('modal-history')">Cerrar</button></div></div>
 
-  <script>
-    const STORAGE_KEY = "gastosGuardados";
-    let gastos = [];
+    <script>
+        let txs = JSON.parse(localStorage.getItem('v11_txs')) || [];
+        let debts = JSON.parse(localStorage.getItem('v11_debts')) || [];
+        let archives = JSON.parse(localStorage.getItem('v11_archives')) || [];
+        let catsInc = JSON.parse(localStorage.getItem('v11_catsInc')) || ["Sueldo", "Venta"];
+        let catsExp = JSON.parse(localStorage.getItem('v11_catsExp')) || ["Comida", "Transporte", "Salud"];
+        let viewingArchive = null, filterType = 'all', filterCat = 'all';
 
-    // Variables para guardar el índice del gasto y abono que se están editando
-    let currentGastoIndex = -1;
-    let currentAbonoIndex = -1;
-    let oldAbonoMonto = 0; // Para guardar el monto original al editar
+        const fmt = (n) => new Intl.NumberFormat('de-DE').format(Math.abs(n));
 
-    // --- Función de Utilidad para Formatear Moneda ---
-    function formatearMoneda(cantidad) {
-      // Ajusta las opciones para el formato de moneda chilena
-      return new Intl.NumberFormat('es-CL', {
-        style: 'currency',
-        currency: 'CLP',
-        minimumFractionDigits: 0, // No mostrar decimales para pesos chilenos si no hay centavos
-        maximumFractionDigits: 0, // O 2 si trabajas con centavos
-      }).format(cantidad);
-    }
-
-    // --- Funciones de Modal ---
-    function abrirModal(id) {
-        document.getElementById(id).style.display = 'block';
-    }
-
-    function cerrarModal(id) {
-        document.getElementById(id).style.display = 'none';
-    }
-
-    window.onload = () => {
-      const datos = localStorage.getItem(STORAGE_KEY);
-      if (datos) gastos = JSON.parse(datos);
-      actualizarVista();
-      document.getElementById("buscador").addEventListener("input", actualizarVista); // Actualiza al escribir en el buscador
-
-      // Event Listeners para el nuevo modal de edición de abonos
-      document.getElementById("closeEditAbonoModal").addEventListener("click", () => cerrarModal('editAbonoModal'));
-      document.getElementById("editarAbonoForm").addEventListener("submit", (e) => {
-          e.preventDefault();
-          guardarEdicionAbono();
-      });
-    };
-
-    function guardarDatos() {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(gastos));
-    }
-
-    function agregarGasto() {
-      const descripcionInput = document.getElementById("descripcion");
-      const montoInput = document.getElementById("monto");
-      const descripcion = descripcionInput.value.trim().toLowerCase();
-      const monto = parseFloat(montoInput.value);
-
-      if (!descripcion) {
-        alert("Por favor, ingresa una descripción para el gasto.");
-        return;
-      }
-      if (isNaN(monto) || monto <= 0) {
-        alert("Por favor, ingresa un monto válido y positivo.");
-        return;
-      }
-
-      const existente = gastos.find(g => g.descripcion.toLowerCase() === descripcion);
-      if (existente) {
-        existente.deuda += monto;
-        alert(`Gasto "${descripcion}" actualizado. Nueva deuda: ${formatearMoneda(existente.deuda)}.`);
-      } else {
-        gastos.push({ descripcion, deuda: monto, abonos: [], expandido: false });
-        alert(`Gasto "${descripcion}" agregado con deuda de ${formatearMoneda(monto)}.`);
-      }
-      descripcionInput.value = "";
-      montoInput.value = "";
-      guardarDatos();
-      actualizarVista();
-    }
-
-    function abonar() {
-      const selector = document.getElementById("gastoSeleccionado");
-      const abonoInput = document.getElementById("abono");
-      const index = selector.value;
-      const abonoMonto = parseFloat(abonoInput.value);
-
-      if (index === "" || !gastos[index]) {
-        alert("Por favor, selecciona un gasto para abonar.");
-        return;
-      }
-
-      if (isNaN(abonoMonto) || abonoMonto <= 0) {
-        alert("Por favor, ingresa un monto de abono válido y positivo.");
-        return;
-      }
-      
-      const gasto = gastos[index];
-      if (gasto.deuda <= 0) {
-          alert(`El gasto "${gasto.descripcion}" ya está completamente pagado.`);
-          abonoInput.value = ""; // Limpiar el input de abono
-          return;
-      }
-
-      const fecha = new Date().toLocaleString('es-CL', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }); // Formato de fecha y hora
-      
-      gasto.abonos.push({ monto: abonoMonto, fecha });
-      gasto.deuda -= abonoMonto;
-      
-      if (gasto.deuda < 0) {
-          alert(`¡Has abonado más de lo necesario! El exceso de ${formatearMoneda(Math.abs(gasto.deuda))} se considera pagado.`);
-          gasto.deuda = 0; // Asegurarse de que la deuda no sea negativa
-      } else {
-          alert(`Abono de ${formatearMoneda(abonoMonto)} registrado para "${gasto.descripcion}". Deuda pendiente: ${formatearMoneda(gasto.deuda)}`);
-      }
-
-      abonoInput.value = ""; // Limpiar el input de abono
-      guardarDatos();
-      actualizarVista();
-    }
-
-    function eliminarGasto(i) {
-      if (confirm(`¿Estás seguro de que quieres eliminar el gasto "${gastos[i].descripcion}" y todo su historial?`)) {
-        gastos.splice(i, 1);
-        guardarDatos();
-        actualizarVista();
-      }
-    }
-
-    function toggleHistorial(i) {
-      gastos[i].expandido = !gastos[i].expandido;
-      actualizarVista();
-    }
-
-    // --- Funciones para Editar Abono ---
-    function abrirModalEditarAbono(gastoIndex, abonoIndex) {
-        currentGastoIndex = gastoIndex;
-        currentAbonoIndex = abonoIndex;
-        const abono = gastos[gastoIndex].abonos[abonoIndex];
-
-        // Convertir la fecha del abono a formato YYYY-MM-DD para el input type="date"
-        // La fecha original está en formato local string, necesitamos parsearla.
-        const fechaObj = new Date(abono.fecha);
-        const year = fechaObj.getFullYear();
-        const month = String(fechaObj.getMonth() + 1).padStart(2, '0');
-        const day = String(fechaObj.getDate()).padStart(2, '0');
-        const formattedDate = `${year}-${month}-${day}`;
-        
-        document.getElementById("editarAbonoFecha").value = formattedDate;
-        document.getElementById("editarAbonoMonto").value = abono.monto;
-        oldAbonoMonto = abono.monto; // Guardar el monto antiguo para recalcular deuda
-        abrirModal('editAbonoModal');
-    }
-
-    function guardarEdicionAbono() {
-        const nuevaFecha = document.getElementById("editarAbonoFecha").value;
-        const nuevoMonto = parseFloat(document.getElementById("editarAbonoMonto").value);
-
-        if (isNaN(nuevoMonto) || nuevoMonto <= 0) {
-            alert("Por favor, ingresa un monto válido y positivo para el abono.");
-            return;
+        function save() {
+            localStorage.setItem('v11_txs', JSON.stringify(txs));
+            localStorage.setItem('v11_debts', JSON.stringify(debts));
+            localStorage.setItem('v11_archives', JSON.stringify(archives));
+            localStorage.setItem('v11_catsInc', JSON.stringify(catsInc));
+            localStorage.setItem('v11_catsExp', JSON.stringify(catsExp));
         }
 
-        const gasto = gastos[currentGastoIndex];
-        const abono = gasto.abonos[currentAbonoIndex];
+        function updateUI() {
+            const list = document.getElementById('transaction-list');
+            const chips = document.getElementById('filter-container');
+            const dataToUse = viewingArchive || txs;
+            list.innerHTML = ''; chips.innerHTML = '';
 
-        // Recalcular la deuda del gasto
-        gasto.deuda += oldAbonoMonto; // Revertir el monto antiguo
-        gasto.deuda -= nuevoMonto;   // Aplicar el nuevo monto
+            document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('active'));
+            if(filterType !== 'all') document.getElementById('card-'+filterType).classList.add('active');
 
-        // Asegurarse de que la deuda no sea negativa
-        if (gasto.deuda < 0) {
-            alert(`Ajuste de deuda: El gasto "${gasto.descripcion}" ha sido saldado y hay un exceso de ${formatearMoneda(Math.abs(gasto.deuda))}.`);
-            gasto.deuda = 0;
-        } else {
-            alert(`Abono editado. Nueva deuda para "${gasto.descripcion}": ${formatearMoneda(gasto.deuda)}.`);
-        }
-        
-        // Actualizar el abono con la nueva fecha y monto
-        abono.fecha = new Date(nuevaFecha).toLocaleString('es-CL', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
-        abono.monto = nuevoMonto;
-
-        guardarDatos();
-        actualizarVista();
-        cerrarModal('editAbonoModal');
-    }
-
-    // --- Función para Eliminar Abono Individual ---
-    function eliminarAbono(gastoIndex, abonoIndex) {
-        if (confirm(`¿Estás seguro de que quieres eliminar este abono? Se recalculará la deuda del gasto.`)) {
-            const gasto = gastos[gastoIndex];
-            const abonoAEliminar = gasto.abonos[abonoIndex];
-
-            gasto.deuda += abonoAEliminar.monto; // Sumar el monto del abono eliminado de nuevo a la deuda
-
-            gasto.abonos.splice(abonoIndex, 1); // Eliminar el abono del array
-
-            guardarDatos();
-            actualizarVista();
-            alert(`Abono eliminado. La deuda para "${gasto.descripcion}" se ha actualizado a ${formatearMoneda(gasto.deuda)}.`);
-        }
-    }
-
-
-    function actualizarVista() {
-      const listaGastos = document.getElementById("listaGastos");
-      const selector = document.getElementById("gastoSeleccionado");
-      const historial = document.getElementById("historialAbonos");
-      const resumen = document.getElementById("resumenTotales");
-      const filtro = document.getElementById("buscador").value.toLowerCase();
-
-      listaGastos.innerHTML = "";
-      selector.innerHTML = ""; // Limpiar el selector para volver a llenarlo
-      historial.innerHTML = "";
-
-      let totalPagadoGeneral = 0;
-      let totalPendienteGeneral = 0;
-
-      // Primero, poblar el selector y calcular totales
-      gastos.forEach((g, i) => {
-        const pagado = g.abonos.reduce((sum, a) => sum + a.monto, 0);
-        totalPagadoGeneral += pagado;
-        totalPendienteGeneral += g.deuda;
-
-        // Opción para el selector de abonos
-        const option = document.createElement("option");
-        option.value = i;
-        option.textContent = `${g.descripcion} (Pendiente: ${formatearMoneda(g.deuda)})`;
-        if (g.deuda <= 0) {
-            option.disabled = true; // Deshabilita la opción si no hay deuda
-            option.classList.add('gasto-pagado'); // Clase para estilizar
-        }
-        selector.appendChild(option);
-      });
-
-      // Luego, poblar la lista de gastos pendientes y el historial
-      gastos.forEach((g, i) => {
-        const pagado = g.abonos.reduce((sum, a) => sum + a.monto, 0);
-
-        const li = document.createElement("li");
-        // Añadir una clase si el gasto está pagado
-        if (g.deuda <= 0) {
-            li.classList.add('gasto-pagado');
-        }
-        li.innerHTML = `
-          <div>
-            <strong>${g.descripcion}</strong><br>
-            Pagado: ${formatearMoneda(pagado)}<br>
-            Pendiente: ${formatearMoneda(g.deuda)}
-            ${g.abonos.length > 0 ? // Solo mostrar botón si hay abonos
-                `<br><button class="vermasBtn" onclick="toggleHistorial(${i})">
-                  ${g.expandido ? "Ver menos" : "Ver más"}
-                </button>` : ''
+            if(filterType === 'plus' || filterType === 'minus') {
+                const source = filterType === 'plus' ? catsInc : catsExp;
+                chips.innerHTML = `<div class="chip ${filterCat==='all'?'active':''}" onclick="setCatFilter('all')">Todo</div>`;
+                source.forEach(c => chips.innerHTML += `<div class="chip ${filterCat===c?'active':''}" onclick="setCatFilter('${c}')">${c}</div>`);
             }
-          </div>
-          <button class="botonEliminar" onclick="eliminarGasto(${i})">🗑️</button>
-        `;
-        listaGastos.appendChild(li);
 
-        // Historial de Abonos
-        if (g.expandido) {
-          const abonosFiltrados = g.abonos.filter(ab => {
-              const textoBusqueda = `${g.descripcion} ${ab.fecha} ${formatearMoneda(ab.monto)}`.toLowerCase();
-              return textoBusqueda.includes(filtro);
-          });
-          
-          if (abonosFiltrados.length > 0) {
-            abonosFiltrados.forEach((ab, abonoIndex) => { // Añadir abonoIndex aquí
-              const item = document.createElement("li");
-              item.className = "abono-item"; // Usar solo abono-item
-              item.innerHTML = `
-                <div>${g.descripcion}: abonaste ${formatearMoneda(ab.monto)} el ${ab.fecha}</div>
-                <div>
-                    <button class="botonEditarAbono" onclick="abrirModalEditarAbono(${i}, ${abonoIndex})">✏️</button>
-                    <button class="botonEliminarAbono" onclick="eliminarAbono(${i}, ${abonoIndex})">🗑️</button>
-                </div>
-              `;
-              historial.appendChild(item);
+            const filtered = filterType === 'debt' ? debts.map(d=>({...d,isD:true})) : dataToUse.filter(t => {
+                return (filterType==='all' || (filterType==='plus'?t.amount>0:t.amount<0)) && (filterCat==='all' || t.cat === filterCat);
             });
-          } else if (filtro && g.abonos.length > 0) {
-              const item = document.createElement("li");
-              item.className = "abono-item";
-              item.textContent = `No se encontraron abonos para "${g.descripcion}" con el filtro "${filtro}".`;
-              historial.appendChild(item);
-          }
+
+            filtered.sort((a,b) => b.id - a.id).forEach(t => {
+                const div = document.createElement('div');
+                div.className = 'item-card';
+                div.innerHTML = `<div class="item-info"><b>${t.text}</b><small>${t.date}</small><br>${t.cat?`<span class="tag-pill">${t.cat}</span>`:''}</div>
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        ${t.isD && !viewingArchive ? `<button onclick="payDebt(${t.id})" style="background:var(--income); border:none; color:white; padding:6px 10px; border-radius:8px; font-weight:800; font-size:0.65rem;">PAGAR</button>`:''}
+                        <span class="amount-text ${t.isD?'debt':(t.amount>0?'plus':'minus')}">$${fmt(t.amount)}</span>
+                        ${!viewingArchive ? `<i class="fa-solid fa-circle-xmark" style="color:#e2e8f0; font-size:1.3rem;" onclick="${t.isD?'deleteDebt':'deleteTx'}(${t.id})"></i>` : ''}
+                    </div>`;
+                list.appendChild(div);
+            });
+
+            const ti = dataToUse.filter(t=>t.amount>0).reduce((a,b)=>a+b.amount,0);
+            const te = Math.abs(dataToUse.filter(t=>t.amount<0).reduce((a,b)=>a+b.amount,0));
+            document.getElementById('balance-display').innerText = `$${fmt(ti-te)}`;
+            document.getElementById('total-inc').innerText = `+$${fmt(ti)}`;
+            document.getElementById('total-exp').innerText = `-$${fmt(te)}`;
+            document.getElementById('total-deb').innerText = `$${fmt(debts.reduce((a,b)=>a+b.amount,0))}`;
+            renderCatManager(); renderArchives(); save();
         }
-      });
 
-      // Si no hay gastos expandidos, pero hay filtro y abonos en general, mostrar todos los abonos filtrados
-      if (!gastos.some(g => g.expandido) && filtro) {
-          let abonosGlobalesFiltrados = [];
-          gastos.forEach((g, gastoIdx) => { // Añadir gastoIdx para pasar al editor
-              g.abonos.forEach((ab, abonoIdx) => {
-                  const textoBusqueda = `${g.descripcion} ${ab.fecha} ${formatearMoneda(ab.monto)}`.toLowerCase();
-                  if (textoBusqueda.includes(filtro)) {
-                      abonosGlobalesFiltrados.push({
-                          gastoIndex: gastoIdx, // Guardar índices para edición
-                          abonoIndex: abonoIdx,
-                          descripcion: g.descripcion,
-                          monto: ab.monto,
-                          fecha: ab.fecha
-                      });
-                  }
-              });
-          });
-          
-          if (abonosGlobalesFiltrados.length > 0) {
-              abonosGlobalesFiltrados.forEach(ab => {
-                  const item = document.createElement("li");
-                  item.className = "abono-item";
-                  item.innerHTML = `
-                    <div>${ab.descripcion}: abonaste ${formatearMoneda(ab.monto)} el ${ab.fecha}</div>
-                    <div>
-                        <button class="botonEditarAbono" onclick="abrirModalEditarAbono(${ab.gastoIndex}, ${ab.abonoIndex})">✏️</button>
-                        <button class="botonEliminarAbono" onclick="eliminarAbono(${ab.gastoIndex}, ${ab.abonoIndex})">🗑️</button>
+        // FUNCIÓN CLAVE: REORDENAR CATEGORÍAS
+        function moveCat(type, index, direction) {
+            const arr = (type === 'inc') ? catsInc : catsExp;
+            const newIndex = index + direction;
+            if (newIndex >= 0 && newIndex < arr.length) {
+                const temp = arr[index];
+                arr[index] = arr[newIndex];
+                arr[newIndex] = temp;
+                updateUI();
+            }
+        }
+
+        function renderCatManager() {
+            const draw = (arr, type) => arr.map((c, i) => `
+                <div class="cat-card">
+                    <span>${c}</span>
+                    <div class="cat-controls">
+                        <button class="btn-order" onclick="moveCat('${type}', ${i}, -1)"><i class="fa fa-chevron-up"></i></button>
+                        <button class="btn-order" onclick="moveCat('${type}', ${i}, 1)"><i class="fa fa-chevron-down"></i></button>
+                        <button class="btn-del-cat" onclick="${type==='inc'?'catsInc':'catsExp'}.splice(${i},1);updateUI()"><i class="fa fa-trash-can"></i></button>
                     </div>
-                  `;
-                  historial.appendChild(item);
-              });
-          } else if (gastos.some(g => g.abonos.length > 0)) { // Solo si hay abonos en general
-              const item = document.createElement("li");
-              item.className = "abono-item";
-              item.textContent = `No se encontraron abonos con el filtro "${filtro}".`;
-              historial.appendChild(item);
-          }
-      } else if (!gastos.some(g => g.expandido) && !filtro && gastos.some(g => g.abonos.length > 0)) {
-          // Si no hay expandidos y no hay filtro, y hay abonos, no mostrar nada en el historial por defecto
-          // Esto evita una lista gigante si el usuario no ha expandido nada.
-          // Si se desea mostrar todo el historial por defecto, simplemente quitar este "else if"
-      }
+                </div>`).join('');
+            document.getElementById('cat-list-inc').innerHTML = draw(catsInc, 'inc');
+            document.getElementById('cat-list-exp').innerHTML = draw(catsExp, 'exp');
+        }
 
+        function addCat() {
+            const val = document.getElementById('new-cat-name').value.trim();
+            const type = document.getElementById('new-cat-type').value;
+            if(val) { (type==='inc'?catsInc:catsExp).push(val); document.getElementById('new-cat-name').value=''; updateUI(); }
+        }
 
-      // --- Actualización del Resumen General ---
-      resumen.innerHTML = `
-        <strong>🧾 Resumen General:</strong><br>
-        Total pagado: <span style="color: var(--positivo)">${formatearMoneda(totalPagadoGeneral)}</span><br>
-        Total pendiente: <span style="color: var(--negativo)">${formatearMoneda(totalPendienteGeneral)}</span>
-      `;
-    }
-  </script>
+        function refreshFormCats() {
+            const t = document.getElementById('tx-type').value;
+            const s = document.getElementById('tx-category');
+            s.style.display = t==='debt'?'none':'block';
+            s.innerHTML = (t==='plus'?catsInc:catsExp).map(c=>`<option value="${c}">${c}</option>`).join('');
+        }
+
+        // RESTO DE LÓGICA (Simplificada para no cortar)
+        document.getElementById('tx-form').addEventListener('submit',e=>{
+            e.preventDefault();
+            const v = parseInt(document.getElementById('tx-amount').value.replace(/\./g,""));
+            const t = document.getElementById('tx-type').value;
+            const obj = {id:Date.now(), text:document.getElementById('tx-text').value, amount:v, date:new Date().toLocaleDateString('es-ES')};
+            if(t==='debt') debts.push(obj); else { obj.amount = t==='minus'?-v:v; obj.cat = document.getElementById('tx-category').value; txs.push(obj); }
+            e.target.reset(); closeModal('modal-add'); updateUI();
+        });
+
+        function payDebt(id) {
+            const d = debts.find(x=>x.id===id);
+            txs.push({id:Date.now(), text:"PAGO: "+d.text, amount:-d.amount, date:new Date().toLocaleDateString('es-ES'), cat:"Deuda"});
+            debts = debts.filter(x=>x.id!==id); updateUI();
+        }
+
+        function processArchive() {
+            if(!txs.length) return;
+            const p = txs[0].date+" al "+txs[txs.length-1].date;
+            archives.push({id:Date.now(), period:p, data:[...txs]});
+            const csv = "Fecha,Concepto,Categoria,Monto\n"+txs.map(t=>`${t.date},${t.text},${t.cat},${t.amount}`).join("\n");
+            const a = document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download=`Reporte_${p}.csv`; a.click();
+            txs = []; updateUI(); closeModal('modal-archive');
+        }
+
+        function loadArch(id) { viewingArchive = archives.find(x=>x.id===id).data; document.getElementById('archive-banner').style.display='block'; document.getElementById('main-actions').style.display='none'; updateUI(); closeModal('modal-history'); }
+        function exitArchiveMode() { viewingArchive = null; document.getElementById('archive-banner').style.display='none'; document.getElementById('main-actions').style.display='flex'; updateUI(); }
+        function renderArchives() { document.getElementById('archives-list').innerHTML = archives.map(a=>`<div class="cat-card" onclick="loadArch(${a.id})">${a.period}</div>`).join(''); }
+        function openModal(id) { document.getElementById(id).style.display='flex'; if(id==='modal-add') refreshFormCats(); }
+        function closeModal(id) { document.getElementById(id).style.display='none'; }
+        function setFilter(f) { filterType = (filterType===f)?'all':f; filterCat='all'; updateUI(); }
+        function setCatFilter(c) { filterCat = c; updateUI(); }
+        function deleteTx(id) { if(confirm("¿Eliminar?")){txs=txs.filter(t=>t.id!==id); updateUI();} }
+        function deleteDebt(id) { if(confirm("¿Eliminar?")){debts=debts.filter(d=>d.id!==id); updateUI();} }
+        
+        document.getElementById('tx-amount').addEventListener('input',e=>{
+            let v = e.target.value.replace(/\D/g,""); e.target.value = v?fmt(v):"";
+        });
+        document.getElementById('import-json').addEventListener('change', e=>{
+            const r = new FileReader(); r.onload = ev => { archives.push({id:Date.now(), period:"Importado "+new Date().toLocaleDateString(), data:JSON.parse(ev.target.result)}); updateUI(); };
+            r.readAsText(e.target.files[0]);
+        });
+
+        updateUI();
+    </script>
 </body>
 </html>
