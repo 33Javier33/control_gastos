@@ -3,119 +3,105 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Wallet Master - Ordenable</title>
+    <title>ControlGastos Premium - Seguro</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        :root {
-            --primary: #4f46e5; --income: #10b981; --expense: #ef4444; --debt: #f59e0b;
-            --bg: #f8fafc; --card-bg: #ffffff; --text-main: #1e293b; --text-muted: #64748b;
-            --radius: 16px;
+        :root { --p: #4f46e5; --i: #10b981; --e: #ef4444; --d: #f59e0b; --bg: #f8fafc; --card: #ffffff; --text: #1e293b; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
+        body { font-family: sans-serif; background: var(--bg); color: var(--text); margin: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        
+        /* Pantalla de Bloqueo */
+        #login-screen {
+            position: fixed; inset: 0; background: var(--p); z-index: 1000;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; color: white;
+        }
+        .login-box { background: rgba(255,255,255,0.1); padding: 30px; border-radius: 25px; backdrop-filter: blur(10px); text-align: center; width: 85%; max-width: 350px; }
+        .login-box input { 
+            width: 100%; padding: 15px; border-radius: 15px; border: none; margin: 20px 0; 
+            font-size: 1.5rem; text-align: center; letter-spacing: 10px; color: var(--p);
         }
 
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
-        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text-main); margin: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        /* Loader */
+        #loader { position: fixed; inset: 0; background: rgba(255,255,255,0.9); z-index: 500; display: none; flex-direction: column; align-items: center; justify-content: center; }
+        .spinner { width: 40px; height: 40px; border: 4px solid #ddd; border-top-color: var(--p); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* HEADER */
-        header { background: var(--primary); color: white; padding: 25px 20px 45px; text-align: center; border-radius: 0 0 30px 30px; position: relative; box-shadow: 0 10px 20px -10px rgba(79,70,229,0.4); }
-        .nav-btn { position: absolute; top: 20px; background: rgba(255,255,255,0.15); border: none; color: white; padding: 12px; border-radius: 14px; font-size: 1rem; backdrop-filter: blur(5px); }
-        .btn-left { left: 20px; } .btn-right { right: 20px; }
-        header h1 { font-size: 2.2rem; margin: 5px 0 0; font-weight: 800; letter-spacing: -1px; }
+        header { background: var(--p); color: white; padding: 25px 20px 45px; text-align: center; border-radius: 0 0 30px 30px; position: relative; }
+        header h1 { font-size: 2.2rem; margin: 5px 0 0; font-weight: 800; }
+        .nav-btn { position: absolute; top: 20px; background: rgba(255,255,255,0.15); border: none; color: white; padding: 10px; border-radius: 12px; font-size: 1.1rem; }
 
-        #archive-banner { background: #1e293b; color: white; padding: 10px; text-align: center; font-size: 0.75rem; display: none; font-weight: 600; }
+        .summary-grid { display: flex; gap: 8px; padding: 0 15px; margin-top: -25px; z-index: 5; }
+        .stat-card { flex: 1; background: var(--card); padding: 12px 5px; border-radius: 15px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 2.5px solid transparent; }
+        .stat-card.active { border-color: var(--p); }
+        .stat-card b { display: block; font-size: 0.6rem; color: #888; text-transform: uppercase; }
+        .stat-card span { font-size: 0.85rem; font-weight: 800; }
 
-        /* RESUMEN */
-        .summary-grid { display: flex; gap: 10px; padding: 0 15px; margin-top: -25px; z-index: 5; }
-        .stat-card { flex: 1; background: var(--card-bg); padding: 12px 5px; border-radius: var(--radius); text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 2.5px solid transparent; transition: 0.2s; }
-        .stat-card.active { border-color: var(--primary); transform: translateY(-3px); }
-        .stat-card b { display: block; font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 2px; }
-        .stat-card span { font-size: 0.9rem; font-weight: 800; }
-
-        /* CATEGORÍAS FILTRO */
         .category-bar { display: flex; gap: 8px; overflow-x: auto; padding: 15px 20px; scrollbar-width: none; }
-        .category-bar::-webkit-scrollbar { display: none; }
-        .chip { background: white; padding: 8px 16px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); border: 1.5px solid #e2e8f0; white-space: nowrap; }
-        .chip.active { background: var(--primary); color: white; border-color: var(--primary); box-shadow: 0 4px 12px rgba(79,70,229,0.3); }
+        .chip { background: white; padding: 8px 16px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; color: #64748b; border: 1.5px solid #e2e8f0; white-space: nowrap; }
+        .chip.active { background: var(--p); color: white; border-color: var(--p); box-shadow: 0 4px 10px rgba(79,70,229,0.2); }
 
-        /* MOVIMIENTOS */
         .main-feed { flex: 1; overflow-y: auto; padding: 0 20px 100px; }
-        .item-card { background: var(--card-bg); padding: 16px; border-radius: var(--radius); margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
-        .tag-pill { display: inline-block; font-size: 0.65rem; background: #f1f5f9; padding: 2px 8px; border-radius: 6px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-top: 4px; }
-        .amount-text { font-weight: 800; font-size: 1rem; }
-        .amount-text.plus { color: var(--income); } .amount-text.minus { color: var(--expense); } .amount-text.debt { color: var(--debt); }
+        .item-card { background: var(--card); padding: 16px; border-radius: 18px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        .item-info b { display: block; font-size: 0.95rem; text-transform: capitalize; }
+        .item-info small { color: #888; font-size: 0.75rem; }
+        .tag { display: inline-block; font-size: 0.6rem; background: #f1f5f9; padding: 2px 6px; border-radius: 5px; font-weight: bold; margin-top: 4px; color: #64748b; }
 
-        /* ACCIONES */
+        .amount { font-weight: 800; font-size: 1rem; }
+        .plus-txt { color: var(--i); } .minus-txt { color: var(--e); } .debt-txt { color: var(--d); }
+
         .actions { position: fixed; bottom: 25px; right: 25px; display: flex; flex-direction: column; gap: 12px; z-index: 50; }
-        .btn-fab { width: 60px; height: 60px; border-radius: 50%; border: none; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.5rem; box-shadow: 0 8px 20px rgba(79,70,229,0.3); }
+        .btn-fab { width: 60px; height: 60px; border-radius: 50%; border: none; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.5rem; box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
 
-        /* MODALES */
-        .modal { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); display: none; align-items: flex-end; z-index: 100; backdrop-filter: blur(3px); }
-        .modal-content { background: white; width: 100%; padding: 25px; border-radius: 30px 30px 0 0; max-height: 90vh; overflow-y: auto; animation: slideUp 0.3s ease-out; }
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: flex-end; z-index: 100; backdrop-filter: blur(2px); }
+        .modal-content { background: white; width: 100%; padding: 25px; border-radius: 30px 30px 0 0; max-height: 85vh; overflow-y: auto; animation: slideUp 0.3s; }
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
         
-        input, select, .btn-full { width: 100%; padding: 16px; margin-bottom: 12px; border-radius: 14px; border: 1px solid #e2e8f0; font-size: 1rem; }
-        .btn-full { border: none; font-weight: 800; transition: 0.2s; }
-        .btn-primary { background: var(--primary); color: white; }
-
-        /* GESTIÓN CATEGORÍAS ORDENABLES */
-        .cat-manager-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
-        .cat-card { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0; }
-        .cat-card span { font-weight: 700; font-size: 0.9rem; flex: 1; }
-        .cat-controls { display: flex; align-items: center; gap: 10px; }
-        .btn-order { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 6px; color: var(--text-muted); font-size: 0.8rem; }
-        .btn-del-cat { color: var(--expense); font-size: 1.1rem; border: none; background: none; margin-left: 5px; }
+        input, select, .btn-full { width: 100%; padding: 16px; margin-bottom: 10px; border-radius: 15px; border: 1px solid #e2e8f0; font-size: 1rem; }
+        .btn-full { background: var(--p); color: white; border: none; font-weight: bold; }
+        
+        .cat-item { display: flex; justify-content: space-between; padding: 12px; background: #f8fafc; border-radius: 12px; margin-bottom: 8px; align-items: center; border: 1px solid #e2e8f0; }
+        #archive-banner { background: #1e293b; color: white; padding: 10px; text-align: center; font-size: 0.8rem; display: none; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <div id="archive-banner">MODO LECTURA ACTIVO <span onclick="exitArchiveMode()" style="text-decoration:underline; margin-left:8px; color:#93c5fd;">[SALIR]</span></div>
+    <!-- Pantalla de Inicio de Sesión -->
+    <div id="login-screen">
+        <div class="login-box">
+            <i class="fa-solid fa-shield-halved" style="font-size: 3rem; margin-bottom: 10px;"></i>
+            <h3>Acceso Seguro</h3>
+            <p>Introduce tu PIN para continuar</p>
+            <input type="password" id="pin-input" inputmode="numeric" placeholder="****" maxlength="4">
+            <button class="btn-full" onclick="checkLogin()" style="background: var(--i);">Entrar</button>
+        </div>
+    </div>
 
-    <header id="app-header">
-        <button class="nav-btn btn-left" onclick="openModal('modal-history')"><i class="fa-solid fa-clock-rotate-left"></i></button>
-        <button class="nav-btn btn-right" onclick="openModal('modal-archive')"><i class="fa-solid fa-box-archive"></i></button>
-        <span style="font-weight: 600;">Saldo Total</span>
+    <div id="loader"><div class="spinner"></div><p>Sincronizando con Google Sheets...</p></div>
+    <div id="archive-banner">MODO LECTURA <span onclick="exitArchiveMode()" style="text-decoration:underline; margin-left:10px;">[CERRAR]</span></div>
+
+    <header>
+        <button class="nav-btn" style="left:20px" onclick="openModal('modal-history')"><i class="fa-solid fa-clock-rotate-left"></i></button>
+        <button class="nav-btn" style="right:20px" onclick="openModal('modal-archive')"><i class="fa-solid fa-box-archive"></i></button>
+        <span style="font-size:0.7rem; opacity:0.8; letter-spacing: 1px;">CAPITAL ACTUAL</span>
         <h1 id="balance-display">$0</h1>
     </header>
 
     <div class="summary-grid">
-        <div class="stat-card" id="card-plus" onclick="setFilter('plus')"><b>Ingresos</b><span id="total-inc" style="color:var(--income)">$0</span></div>
-        <div class="stat-card" id="card-minus" onclick="setFilter('minus')"><b>Gastos</b><span id="total-exp" style="color:var(--expense)">$0</span></div>
-        <div class="stat-card" id="card-debt" onclick="setFilter('debt')"><b>Deudas</b><span id="total-deb" style="color:var(--debt)">$0</span></div>
+        <div class="stat-card" id="card-plus" onclick="setFilter('plus')"><b>Ingresos</b><span id="total-inc" style="color:var(--i)">$0</span></div>
+        <div class="stat-card" id="card-minus" onclick="setFilter('minus')"><b>Gastos</b><span id="total-exp" style="color:var(--e)">$0</span></div>
+        <div class="stat-card" id="card-debt" onclick="setFilter('debt')"><b>Deudas</b><span id="total-deb" style="color:var(--d)">$0</span></div>
     </div>
 
     <div id="filter-container" class="category-bar"></div>
 
-    <div class="main-feed">
-        <div id="transaction-list"></div>
-    </div>
+    <div class="main-feed"><div id="transaction-list"></div></div>
 
     <div class="actions" id="main-actions">
-        <button class="btn-fab" style="background:white; color:var(--primary)" onclick="openModal('modal-categories')"><i class="fa-solid fa-tags"></i></button>
-        <button class="btn-fab" style="background:var(--primary)" onclick="openModal('modal-add')"><i class="fa-solid fa-plus"></i></button>
+        <button class="btn-fab" style="background:white; color:var(--p)" onclick="openModal('modal-cat')"><i class="fa-solid fa-tags"></i></button>
+        <button class="btn-fab" style="background:var(--p)" onclick="openModal('modal-add')"><i class="fa-solid fa-plus"></i></button>
     </div>
 
-    <!-- MODAL: GESTIÓN CATEGORÍAS (ORDENABLE) -->
-    <div class="modal" id="modal-categories" onclick="closeModal('modal-categories')">
-        <div class="modal-content" onclick="event.stopPropagation()">
-            <h3 style="margin-bottom: 10px;">Categorías</h3>
-            <p style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 15px;">Usa las flechas para reordenar la lista.</p>
-            
-            <div style="display:flex; gap:8px; margin-bottom:20px;">
-                <input type="text" id="new-cat-name" placeholder="Nombre..." style="margin:0;">
-                <select id="new-cat-type" style="width:40%; margin:0;"><option value="inc">Ingreso</option><option value="exp">Gasto</option></select>
-                <button onclick="addCat()" style="background:var(--primary); color:white; border:none; padding:0 15px; border-radius:12px; font-size:1.2rem;">+</button>
-            </div>
-
-            <p style="font-size: 0.7rem; font-weight: 800; color:var(--income); text-transform: uppercase;">Ingresos</p>
-            <div id="cat-list-inc" class="cat-manager-list"></div>
-
-            <p style="font-size: 0.7rem; font-weight: 800; color:var(--expense); text-transform: uppercase;">Gastos</p>
-            <div id="cat-list-exp" class="cat-manager-list"></div>
-
-            <button class="btn-full btn-primary" style="background:#94a3b8; margin-top:10px;" onclick="closeModal('modal-categories')">Cerrar</button>
-        </div>
-    </div>
-
-    <!-- MODAL: AGREGAR REGISTRO -->
+    <!-- MODAL REGISTRO -->
     <div class="modal" id="modal-add" onclick="closeModal('modal-add')">
         <div class="modal-content" onclick="event.stopPropagation()">
             <h3>Nuevo Registro</h3>
@@ -125,160 +111,247 @@
                 <select id="tx-type" onchange="refreshFormCats()">
                     <option value="plus">Ingreso (+)</option>
                     <option value="minus" selected>Gasto (-)</option>
-                    <option value="debt">Deuda (Debo)</option>
+                    <option value="debt">Deuda (Dinero que debo)</option>
                 </select>
                 <select id="tx-category"></select>
-                <button type="submit" class="btn-full btn-primary">Guardar</button>
-                <button type="button" class="btn-full" style="background:none; color:#94a3b8;" onclick="closeModal('modal-add')">Cancelar</button>
+                <button type="submit" class="btn-full">Guardar en la Nube</button>
             </form>
         </div>
     </div>
 
-    <!-- OTROS MODALES -->
-    <div class="modal" id="modal-archive" onclick="closeModal('modal-archive')"><div class="modal-content" onclick="event.stopPropagation()"><h3>Cierre de Mes</h3><button class="btn-full btn-primary" style="background:var(--income)" onclick="processArchive()">Confirmar Cierre</button><button class="btn-full" style="background:none; color:#94a3b8;" onclick="closeModal('modal-archive')">Cancelar</button></div></div>
-    <div class="modal" id="modal-history" onclick="closeModal('modal-history')"><div class="modal-content" onclick="event.stopPropagation()"><h3>Archivos</h3><div id="archives-list"></div><input type="file" id="import-json" accept=".json" style="margin-top:10px;"><button class="btn-full" style="background:#94a3b8; margin-top:20px;" onclick="closeModal('modal-history')">Cerrar</button></div></div>
+    <!-- MODAL CATEGORÍAS -->
+    <div class="modal" id="modal-cat" onclick="closeModal('modal-cat')">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h3>Gestionar Categorías</h3>
+            <div style="display:flex; gap:8px; margin-bottom:15px;">
+                <input type="text" id="new-cat-name" placeholder="Nombre..." style="margin:0">
+                <select id="new-cat-type" style="width:110px; margin:0"><option value="inc">Ingreso</option><option value="exp">Gasto</option></select>
+                <button onclick="addCat()" style="background:var(--p); color:white; border:none; padding:10px 15px; border-radius:12px">+</button>
+            </div>
+            <div id="cat-admin-list" style="max-height: 350px; overflow-y: auto;"></div>
+            <button class="btn-full" style="background:#94a3b8; margin-top:15px" onclick="closeModal('modal-cat')">Cerrar</button>
+        </div>
+    </div>
+
+    <!-- MODAL ARCHIVO -->
+    <div class="modal" id="modal-archive" onclick="closeModal('modal-archive')">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h3>Cierre de Mes</h3>
+            <p style="color:#64748b; font-size:0.9rem; background: #fff8e1; padding: 10px; border-radius: 10px; border-left: 5px solid var(--d);">
+                <i class="fa-solid fa-triangle-exclamation"></i> <b>¡ATENCIÓN!</b><br>
+                Esta acción moverá todos los ingresos y gastos actuales al historial y limpiará la pantalla principal. No se puede deshacer.
+            </p>
+            <button class="btn-full" onclick="processArchive()" style="background:var(--i); margin-top: 15px;">Confirmar y Archivar</button>
+        </div>
+    </div>
+
+    <!-- MODAL HISTORIAL -->
+    <div class="modal" id="modal-history" onclick="closeModal('modal-history')">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h3>Meses Archivados</h3>
+            <div id="archives-list"></div>
+        </div>
+    </div>
 
     <script>
-        let txs = JSON.parse(localStorage.getItem('v11_txs')) || [];
-        let debts = JSON.parse(localStorage.getItem('v11_debts')) || [];
-        let archives = JSON.parse(localStorage.getItem('v11_archives')) || [];
-        let catsInc = JSON.parse(localStorage.getItem('v11_catsInc')) || ["Sueldo", "Venta"];
-        let catsExp = JSON.parse(localStorage.getItem('v11_catsExp')) || ["Comida", "Transporte", "Salud"];
-        let viewingArchive = null, filterType = 'all', filterCat = 'all';
+        // --- 1. CONFIGURACIÓN ---
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyr1dMKKAbqnnVvyGCTxYBhii5hmSR39zoSdURBYCYR_PTYK81QjwUQHjQtFLSucaNlpg/exec"; 
+        const APP_PIN = "9874"; // <--- CAMBIA TU PIN AQUÍ
+
+        let txs = [], debts = [], archives = [], catsInc = [], catsExp = [];
+        let filterType = 'all', filterCat = 'all', viewingArchive = null;
 
         const fmt = (n) => new Intl.NumberFormat('de-DE').format(Math.abs(n));
 
-        function save() {
-            localStorage.setItem('v11_txs', JSON.stringify(txs));
-            localStorage.setItem('v11_debts', JSON.stringify(debts));
-            localStorage.setItem('v11_archives', JSON.stringify(archives));
-            localStorage.setItem('v11_catsInc', JSON.stringify(catsInc));
-            localStorage.setItem('v11_catsExp', JSON.stringify(catsExp));
+        // --- 2. SEGURIDAD ---
+        function checkLogin() {
+            const input = document.getElementById('pin-input').value;
+            if (input === APP_PIN) {
+                document.getElementById('login-screen').style.display = 'none';
+                sessionStorage.setItem('loggedIn', 'true');
+                fetchFromGoogle();
+            } else {
+                alert("PIN Incorrecto. Inténtalo de nuevo.");
+                document.getElementById('pin-input').value = "";
+            }
         }
 
+        // Auto login si la sesión ya existe
+        if (sessionStorage.getItem('loggedIn') === 'true') {
+            document.getElementById('login-screen').style.display = 'none';
+            fetchFromGoogle();
+        }
+
+        // --- 3. COMUNICACIÓN CON GOOGLE ---
+        async function fetchFromGoogle() {
+            document.getElementById('loader').style.display = 'flex';
+            try {
+                const response = await fetch(WEB_APP_URL);
+                const d = await response.json();
+                txs = d.txs; debts = d.debts; archives = d.archives;
+                catsInc = d.catsInc; catsExp = d.catsExp;
+                updateUI();
+            } catch (e) { console.error("Error al cargar datos"); }
+            document.getElementById('loader').style.display = 'none';
+        }
+
+        async function sync() {
+            document.getElementById('loader').style.display = 'flex';
+            const payload = { data: { txs, debts, archives, catsInc, catsExp } };
+            try {
+                await fetch(WEB_APP_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
+                setTimeout(updateUI, 800);
+            } catch (e) { alert("Error al sincronizar con la nube"); }
+            document.getElementById('loader').style.display = 'none';
+        }
+
+        // --- 4. LÓGICA DE INTERFAZ ---
         function updateUI() {
             const list = document.getElementById('transaction-list');
-            const chips = document.getElementById('filter-container');
-            const dataToUse = viewingArchive || txs;
-            list.innerHTML = ''; chips.innerHTML = '';
-
+            const data = viewingArchive || txs;
+            list.innerHTML = '';
+            
             document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('active'));
             if(filterType !== 'all') document.getElementById('card-'+filterType).classList.add('active');
 
-            if(filterType === 'plus' || filterType === 'minus') {
-                const source = filterType === 'plus' ? catsInc : catsExp;
+            const chips = document.getElementById('filter-container');
+            chips.innerHTML = '';
+            if(filterType === 'plus' || filterType === 'minus'){
+                const src = filterType === 'plus' ? catsInc : catsExp;
                 chips.innerHTML = `<div class="chip ${filterCat==='all'?'active':''}" onclick="setCatFilter('all')">Todo</div>`;
-                source.forEach(c => chips.innerHTML += `<div class="chip ${filterCat===c?'active':''}" onclick="setCatFilter('${c}')">${c}</div>`);
+                src.forEach(c => chips.innerHTML += `<div class="chip ${filterCat===c?'active':''}" onclick="setCatFilter('${c}')">${c}</div>`);
             }
 
-            const filtered = filterType === 'debt' ? debts.map(d=>({...d,isD:true})) : dataToUse.filter(t => {
-                return (filterType==='all' || (filterType==='plus'?t.amount>0:t.amount<0)) && (filterCat==='all' || t.cat === filterCat);
+            const filtered = filterType === 'debt' ? debts.map(d=>({...d,isD:true})) : data.filter(t => {
+                const mType = filterType==='all' || (filterType==='plus'?t.amount>0:t.amount<0);
+                const mCat = filterCat==='all' || t.cat === filterCat;
+                return mType && mCat;
             });
 
             filtered.sort((a,b) => b.id - a.id).forEach(t => {
                 const div = document.createElement('div');
                 div.className = 'item-card';
-                div.innerHTML = `<div class="item-info"><b>${t.text}</b><small>${t.date}</small><br>${t.cat?`<span class="tag-pill">${t.cat}</span>`:''}</div>
+                div.innerHTML = `
+                    <div class="item-info">
+                        <b>${t.text}</b>
+                        <small>${t.date}</small><br>
+                        ${t.cat ? `<span class="tag">${t.cat}</span>` : ''}
+                    </div>
                     <div style="display:flex; align-items:center; gap:10px;">
-                        ${t.isD && !viewingArchive ? `<button onclick="payDebt(${t.id})" style="background:var(--income); border:none; color:white; padding:6px 10px; border-radius:8px; font-weight:800; font-size:0.65rem;">PAGAR</button>`:''}
-                        <span class="amount-text ${t.isD?'debt':(t.amount>0?'plus':'minus')}">$${fmt(t.amount)}</span>
-                        ${!viewingArchive ? `<i class="fa-solid fa-circle-xmark" style="color:#e2e8f0; font-size:1.3rem;" onclick="${t.isD?'deleteDebt':'deleteTx'}(${t.id})"></i>` : ''}
+                        ${t.isD && !viewingArchive ? `<button onclick="payDebt(${t.id})" style="background:var(--i); color:white; border:none; border-radius:8px; font-weight:800; font-size:0.65rem; padding:6px 10px">PAGAR</button>`:''}
+                        <span class="amount ${t.isD?'debt-txt':(t.amount>0?'plus-txt':'minus-txt')}">${t.isD?'':(t.amount>0?'+':'-')}$${fmt(t.amount)}</span>
+                        ${!viewingArchive ? `<i class="fa-solid fa-circle-xmark" style="color:#e2e8f0; font-size:1.3rem;" onclick="${t.isD?'delDb':'delTx'}(${t.id})"></i>`:''}
                     </div>`;
                 list.appendChild(div);
             });
 
-            const ti = dataToUse.filter(t=>t.amount>0).reduce((a,b)=>a+b.amount,0);
-            const te = Math.abs(dataToUse.filter(t=>t.amount<0).reduce((a,b)=>a+b.amount,0));
+            const ti = data.filter(t=>t.amount>0).reduce((a,b)=>a+b.amount,0);
+            const te = Math.abs(data.filter(t=>t.amount<0).reduce((a,b)=>a+b.amount,0));
             document.getElementById('balance-display').innerText = `$${fmt(ti-te)}`;
             document.getElementById('total-inc').innerText = `+$${fmt(ti)}`;
             document.getElementById('total-exp').innerText = `-$${fmt(te)}`;
             document.getElementById('total-deb').innerText = `$${fmt(debts.reduce((a,b)=>a+b.amount,0))}`;
-            renderCatManager(); renderArchives(); save();
+            
+            renderArchives(); renderCatAdmin();
         }
 
-        // FUNCIÓN CLAVE: REORDENAR CATEGORÍAS
-        function moveCat(type, index, direction) {
-            const arr = (type === 'inc') ? catsInc : catsExp;
-            const newIndex = index + direction;
-            if (newIndex >= 0 && newIndex < arr.length) {
-                const temp = arr[index];
-                arr[index] = arr[newIndex];
-                arr[newIndex] = temp;
-                updateUI();
+        // --- 5. FUNCIONES DE NEGOCIO ---
+        document.getElementById('tx-form').addEventListener('submit', e => {
+            e.preventDefault();
+            const val = parseInt(document.getElementById('tx-amount').value.replace(/\./g,''));
+            const type = document.getElementById('tx-type').value;
+            const item = { id:Date.now(), text:document.getElementById('tx-text').value, amount:val, date:new Date().toLocaleDateString('es-ES') };
+            if(type === 'debt') debts.push(item);
+            else { 
+                item.amount = type === 'minus' ? -val : val; 
+                item.cat = document.getElementById('tx-category').value; 
+                txs.push(item); 
+            }
+            closeModal('modal-add'); sync();
+        });
+
+        function payDebt(id) {
+            const d = debts.find(x=>x.id===id);
+            if(confirm(`¿Confirmas el pago de esta deuda por $${fmt(d.amount)}?\n\nEste monto se descontará de tus ingresos actuales.`)) {
+                txs.push({ id:Date.now(), text: "PAGO: "+d.text, amount: -d.amount, date: new Date().toLocaleDateString('es-ES'), cat: "Deuda" });
+                debts = debts.filter(x=>x.id!==id);
+                sync();
             }
         }
 
-        function renderCatManager() {
-            const draw = (arr, type) => arr.map((c, i) => `
-                <div class="cat-card">
-                    <span>${c}</span>
-                    <div class="cat-controls">
-                        <button class="btn-order" onclick="moveCat('${type}', ${i}, -1)"><i class="fa fa-chevron-up"></i></button>
-                        <button class="btn-order" onclick="moveCat('${type}', ${i}, 1)"><i class="fa fa-chevron-down"></i></button>
-                        <button class="btn-del-cat" onclick="${type==='inc'?'catsInc':'catsExp'}.splice(${i},1);updateUI()"><i class="fa fa-trash-can"></i></button>
-                    </div>
-                </div>`).join('');
-            document.getElementById('cat-list-inc').innerHTML = draw(catsInc, 'inc');
-            document.getElementById('cat-list-exp').innerHTML = draw(catsExp, 'exp');
+        function delTx(id) { 
+            if(confirm("¡ADVERTENCIA!\n\n¿Seguro que quieres eliminar este movimiento? Esta acción no se puede deshacer y alterará tu saldo.")) { 
+                txs = txs.filter(t => t.id !== id); 
+                sync(); 
+            } 
+        }
+
+        function delDb(id) { 
+            if(confirm("¿Eliminar esta deuda de la lista? No se registrará ningún pago.")) { 
+                debts = debts.filter(d => d.id !== id); 
+                sync(); 
+            } 
         }
 
         function addCat() {
-            const val = document.getElementById('new-cat-name').value.trim();
-            const type = document.getElementById('new-cat-type').value;
-            if(val) { (type==='inc'?catsInc:catsExp).push(val); document.getElementById('new-cat-name').value=''; updateUI(); }
+            const n = document.getElementById('new-cat-name').value.trim();
+            const t = document.getElementById('new-cat-type').value;
+            if(n) { (t==='inc'?catsInc:catsExp).push(n); document.getElementById('new-cat-name').value=''; updateUI(); sync(); }
         }
 
+        function processArchive() {
+            if(!txs.length) return;
+            if(confirm("¿Estás 100% seguro de archivar este mes?\n\nLos datos se guardarán en el historial y se limpiará la pantalla principal.")) {
+                archives.push({ id:Date.now(), period: txs[0].date+" al "+txs[txs.length-1].date, data:[...txs] });
+                txs = []; 
+                sync(); 
+                closeModal('modal-archive');
+            }
+        }
+
+        // --- 6. UTILIDADES ---
+        function renderCatAdmin() {
+            const draw = (arr, t) => arr.map((c,i)=>`<div class="cat-item"><span>${c}</span><div>
+                <button onclick="moveCat('${t}',${i},-1)">↑</button><button onclick="moveCat('${t}',${i},1)">↓</button>
+                <button onclick="removeCat('${t}',${i})" style="color:var(--e); border:none; background:none; font-weight:bold; margin-left:5px">×</button></div></div>`).join('');
+            document.getElementById('cat-admin-list').innerHTML = `<p style="color:var(--i); font-size:0.7rem; font-weight:bold; margin-top:10px">INGRESOS</p>${draw(catsInc,'inc')}<p style="color:var(--e); font-size:0.7rem; font-weight:bold; margin-top:10px">GASTOS</p>${draw(catsExp,'exp')}`;
+        }
+
+        function removeCat(type, idx) {
+            if(confirm("¿Quieres eliminar esta categoría?\n\nLos registros que ya la usan no se verán afectados, pero ya no podrás seleccionarla para nuevos gastos.")) {
+                if(type === 'inc') catsInc.splice(idx, 1);
+                else catsExp.splice(idx, 1);
+                sync();
+            }
+        }
+
+        function moveCat(type, idx, dir) {
+            const arr = type==='inc' ? catsInc : catsExp;
+            if(idx+dir >= 0 && idx+dir < arr.length){ 
+                [arr[idx], arr[idx+dir]] = [arr[idx+dir], arr[idx]]; 
+                updateUI(); sync(); 
+            }
+        }
+
+        function renderArchives() {
+            document.getElementById('archives-list').innerHTML = archives.map(a => `<div class="item-card" onclick="loadArch(${a.id})"><b>${a.period}</b><i class="fa fa-chevron-right"></i></div>`).join('');
+        }
+        function loadArch(id) { viewingArchive = archives.find(x=>x.id===id).data; document.getElementById('archive-banner').style.display='block'; updateUI(); closeModal('modal-history'); }
+        function exitArchiveMode() { viewingArchive = null; document.getElementById('archive-banner').style.display='none'; updateUI(); }
+        function setFilter(f) { filterType = (filterType===f)?'all':f; filterCat='all'; updateUI(); }
+        function setCatFilter(c) { filterCat = c; updateUI(); }
+        function openModal(id) { document.getElementById(id).style.display='flex'; if(id==='modal-add') refreshFormCats(); }
+        function closeModal(id) { document.getElementById(id).style.display='none'; }
+        
         function refreshFormCats() {
             const t = document.getElementById('tx-type').value;
             const s = document.getElementById('tx-category');
             s.style.display = t==='debt'?'none':'block';
             s.innerHTML = (t==='plus'?catsInc:catsExp).map(c=>`<option value="${c}">${c}</option>`).join('');
         }
-
-        // RESTO DE LÓGICA (Simplificada para no cortar)
-        document.getElementById('tx-form').addEventListener('submit',e=>{
-            e.preventDefault();
-            const v = parseInt(document.getElementById('tx-amount').value.replace(/\./g,""));
-            const t = document.getElementById('tx-type').value;
-            const obj = {id:Date.now(), text:document.getElementById('tx-text').value, amount:v, date:new Date().toLocaleDateString('es-ES')};
-            if(t==='debt') debts.push(obj); else { obj.amount = t==='minus'?-v:v; obj.cat = document.getElementById('tx-category').value; txs.push(obj); }
-            e.target.reset(); closeModal('modal-add'); updateUI();
-        });
-
-        function payDebt(id) {
-            const d = debts.find(x=>x.id===id);
-            txs.push({id:Date.now(), text:"PAGO: "+d.text, amount:-d.amount, date:new Date().toLocaleDateString('es-ES'), cat:"Deuda"});
-            debts = debts.filter(x=>x.id!==id); updateUI();
-        }
-
-        function processArchive() {
-            if(!txs.length) return;
-            const p = txs[0].date+" al "+txs[txs.length-1].date;
-            archives.push({id:Date.now(), period:p, data:[...txs]});
-            const csv = "Fecha,Concepto,Categoria,Monto\n"+txs.map(t=>`${t.date},${t.text},${t.cat},${t.amount}`).join("\n");
-            const a = document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download=`Reporte_${p}.csv`; a.click();
-            txs = []; updateUI(); closeModal('modal-archive');
-        }
-
-        function loadArch(id) { viewingArchive = archives.find(x=>x.id===id).data; document.getElementById('archive-banner').style.display='block'; document.getElementById('main-actions').style.display='none'; updateUI(); closeModal('modal-history'); }
-        function exitArchiveMode() { viewingArchive = null; document.getElementById('archive-banner').style.display='none'; document.getElementById('main-actions').style.display='flex'; updateUI(); }
-        function renderArchives() { document.getElementById('archives-list').innerHTML = archives.map(a=>`<div class="cat-card" onclick="loadArch(${a.id})">${a.period}</div>`).join(''); }
-        function openModal(id) { document.getElementById(id).style.display='flex'; if(id==='modal-add') refreshFormCats(); }
-        function closeModal(id) { document.getElementById(id).style.display='none'; }
-        function setFilter(f) { filterType = (filterType===f)?'all':f; filterCat='all'; updateUI(); }
-        function setCatFilter(c) { filterCat = c; updateUI(); }
-        function deleteTx(id) { if(confirm("¿Eliminar?")){txs=txs.filter(t=>t.id!==id); updateUI();} }
-        function deleteDebt(id) { if(confirm("¿Eliminar?")){debts=debts.filter(d=>d.id!==id); updateUI();} }
-        
         document.getElementById('tx-amount').addEventListener('input',e=>{
             let v = e.target.value.replace(/\D/g,""); e.target.value = v?fmt(v):"";
         });
-        document.getElementById('import-json').addEventListener('change', e=>{
-            const r = new FileReader(); r.onload = ev => { archives.push({id:Date.now(), period:"Importado "+new Date().toLocaleDateString(), data:JSON.parse(ev.target.result)}); updateUI(); };
-            r.readAsText(e.target.files[0]);
-        });
-
-        updateUI();
     </script>
 </body>
 </html>
