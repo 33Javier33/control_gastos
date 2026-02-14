@@ -3,25 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ControlGastos Premium - Seguro</title>
+    <title>MisGastos</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root { --p: #4f46e5; --i: #10b981; --e: #ef4444; --d: #f59e0b; --bg: #f8fafc; --card: #ffffff; --text: #1e293b; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
         body { font-family: sans-serif; background: var(--bg); color: var(--text); margin: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
         
-        /* Pantalla de Bloqueo */
-        #login-screen {
-            position: fixed; inset: 0; background: var(--p); z-index: 1000;
-            display: flex; flex-direction: column; align-items: center; justify-content: center; color: white;
-        }
+        #login-screen { position: fixed; inset: 0; background: var(--p); z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; }
         .login-box { background: rgba(255,255,255,0.1); padding: 30px; border-radius: 25px; backdrop-filter: blur(10px); text-align: center; width: 85%; max-width: 350px; }
-        .login-box input { 
-            width: 100%; padding: 15px; border-radius: 15px; border: none; margin: 20px 0; 
-            font-size: 1.5rem; text-align: center; letter-spacing: 10px; color: var(--p);
-        }
+        .login-box input { width: 100%; padding: 15px; border-radius: 15px; border: none; margin: 20px 0; font-size: 1.5rem; text-align: center; letter-spacing: 10px; color: var(--p); }
 
-        /* Loader */
         #loader { position: fixed; inset: 0; background: rgba(255,255,255,0.9); z-index: 500; display: none; flex-direction: column; align-items: center; justify-content: center; }
         .spinner { width: 40px; height: 40px; border: 4px solid #ddd; border-top-color: var(--p); border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
@@ -36,15 +28,21 @@
         .stat-card b { display: block; font-size: 0.6rem; color: #888; text-transform: uppercase; }
         .stat-card span { font-size: 0.85rem; font-weight: 800; }
 
-        .category-bar { display: flex; gap: 8px; overflow-x: auto; padding: 15px 20px; scrollbar-width: none; }
+        .category-bar { display: flex; gap: 8px; overflow-x: auto; padding: 15px 20px 5px; scrollbar-width: none; }
         .chip { background: white; padding: 8px 16px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; color: #64748b; border: 1.5px solid #e2e8f0; white-space: nowrap; }
         .chip.active { background: var(--p); color: white; border-color: var(--p); box-shadow: 0 4px 10px rgba(79,70,229,0.2); }
+
+        /* Banner de Desglose de Origen */
+        #category-total-banner { margin: 0 20px 10px; padding: 15px; background: white; border-radius: 15px; display: none; flex-direction: column; border: 1.5px dashed var(--p); box-shadow: 0 4px 10px rgba(0,0,0,0.03); }
+        .banner-row { display: flex; justify-content: space-between; align-items: center; margin: 3px 0; font-size: 0.85rem; }
+        .banner-main { font-weight: 800; font-size: 1rem; border-bottom: 1px solid #f1f5f9; padding-bottom: 5px; margin-bottom: 5px; }
 
         .main-feed { flex: 1; overflow-y: auto; padding: 0 20px 100px; }
         .item-card { background: var(--card); padding: 16px; border-radius: 18px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
         .item-info b { display: block; font-size: 0.95rem; text-transform: capitalize; }
         .item-info small { color: #888; font-size: 0.75rem; }
         .tag { display: inline-block; font-size: 0.6rem; background: #f1f5f9; padding: 2px 6px; border-radius: 5px; font-weight: bold; margin-top: 4px; color: #64748b; }
+        .source-tag { background: #e0e7ff; color: var(--p); border: 1px solid #c7d2fe; }
 
         .amount { font-weight: 800; font-size: 1rem; }
         .plus-txt { color: var(--i); } .minus-txt { color: var(--e); } .debt-txt { color: var(--d); }
@@ -53,36 +51,30 @@
         .btn-fab { width: 60px; height: 60px; border-radius: 50%; border: none; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.5rem; box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
 
         .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: flex-end; z-index: 100; backdrop-filter: blur(2px); }
-        .modal-content { background: white; width: 100%; padding: 25px; border-radius: 30px 30px 0 0; max-height: 85vh; overflow-y: auto; animation: slideUp 0.3s; }
-        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-        
-        input, select, .btn-full { width: 100%; padding: 16px; margin-bottom: 10px; border-radius: 15px; border: 1px solid #e2e8f0; font-size: 1rem; }
+        .modal-content { background: white; width: 100%; padding: 25px; border-radius: 30px 30px 0 0; max-height: 85vh; overflow-y: auto; }
+        input, select, .btn-full { width: 100%; padding: 16px; margin-bottom: 10px; border-radius: 14px; border: 1px solid #e2e8f0; font-size: 1rem; }
         .btn-full { background: var(--p); color: white; border: none; font-weight: bold; }
-        
-        .cat-item { display: flex; justify-content: space-between; padding: 12px; background: #f8fafc; border-radius: 12px; margin-bottom: 8px; align-items: center; border: 1px solid #e2e8f0; }
         #archive-banner { background: #1e293b; color: white; padding: 10px; text-align: center; font-size: 0.8rem; display: none; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <!-- Pantalla de Inicio de Sesión -->
     <div id="login-screen">
         <div class="login-box">
             <i class="fa-solid fa-shield-halved" style="font-size: 3rem; margin-bottom: 10px;"></i>
-            <h3>Acceso Seguro</h3>
-            <p>Introduce tu PIN para continuar</p>
+            <h3>Control Seguro</h3>
             <input type="password" id="pin-input" inputmode="numeric" placeholder="****" maxlength="4">
             <button class="btn-full" onclick="checkLogin()" style="background: var(--i);">Entrar</button>
         </div>
     </div>
 
-    <div id="loader"><div class="spinner"></div><p>Sincronizando con Google Sheets...</p></div>
+    <div id="loader"><div class="spinner"></div><p>Sincronizando...</p></div>
     <div id="archive-banner">MODO LECTURA <span onclick="exitArchiveMode()" style="text-decoration:underline; margin-left:10px;">[CERRAR]</span></div>
 
     <header>
         <button class="nav-btn" style="left:20px" onclick="openModal('modal-history')"><i class="fa-solid fa-clock-rotate-left"></i></button>
         <button class="nav-btn" style="right:20px" onclick="openModal('modal-archive')"><i class="fa-solid fa-box-archive"></i></button>
-        <span style="font-size:0.7rem; opacity:0.8; letter-spacing: 1px;">CAPITAL ACTUAL</span>
+        <span style="font-size:0.7rem; opacity:0.8;">CAPITAL ACTUAL</span>
         <h1 id="balance-display">$0</h1>
     </header>
 
@@ -93,6 +85,22 @@
     </div>
 
     <div id="filter-container" class="category-bar"></div>
+
+    <!-- BANNER DE DESGLOSE DE ORIGEN -->
+    <div id="category-total-banner">
+        <div class="banner-row banner-main">
+            <span id="cat-label">Origen</span>
+            <span id="cat-remaining" class="plus-txt">$0</span>
+        </div>
+        <div class="banner-row">
+            <span style="color:#64748b">Total Recibido:</span>
+            <span id="cat-earned" style="color:var(--i); font-weight:bold">$0</span>
+        </div>
+        <div class="banner-row">
+            <span style="color:#64748b">Total Gastado:</span>
+            <span id="cat-spent" style="color:var(--e); font-weight:bold">$0</span>
+        </div>
+    </div>
 
     <div class="main-feed"><div id="transaction-list"></div></div>
 
@@ -111,78 +119,54 @@
                 <select id="tx-type" onchange="refreshFormCats()">
                     <option value="plus">Ingreso (+)</option>
                     <option value="minus" selected>Gasto (-)</option>
-                    <option value="debt">Deuda (Dinero que debo)</option>
+                    <option value="debt">Deuda</option>
                 </select>
-                <select id="tx-category"></select>
-                <button type="submit" class="btn-full">Guardar en la Nube</button>
+                <div id="cat-group">
+                    <label style="font-size:0.7rem">Categoría:</label>
+                    <select id="tx-category"></select>
+                </div>
+                <div id="source-group" style="display:none">
+                    <label style="font-size:0.7rem; color:var(--p)">¿De qué ingreso sale este dinero?</label>
+                    <select id="tx-source"></select>
+                </div>
+                <button type="submit" class="btn-full">Guardar</button>
             </form>
         </div>
     </div>
 
-    <!-- MODAL CATEGORÍAS -->
-    <div class="modal" id="modal-cat" onclick="closeModal('modal-cat')">
+    <!-- MODAL PAGAR DEUDA -->
+    <div class="modal" id="modal-pay-debt" onclick="closeModal('modal-pay-debt')">
         <div class="modal-content" onclick="event.stopPropagation()">
-            <h3>Gestionar Categorías</h3>
-            <div style="display:flex; gap:8px; margin-bottom:15px;">
-                <input type="text" id="new-cat-name" placeholder="Nombre..." style="margin:0">
-                <select id="new-cat-type" style="width:110px; margin:0"><option value="inc">Ingreso</option><option value="exp">Gasto</option></select>
-                <button onclick="addCat()" style="background:var(--p); color:white; border:none; padding:10px 15px; border-radius:12px">+</button>
-            </div>
-            <div id="cat-admin-list" style="max-height: 350px; overflow-y: auto;"></div>
-            <button class="btn-full" style="background:#94a3b8; margin-top:15px" onclick="closeModal('modal-cat')">Cerrar</button>
+            <h3>Pagar Deuda</h3>
+            <p id="pay-debt-info" style="font-size:0.9rem"></p>
+            <select id="pay-debt-source"></select>
+            <button class="btn-full" onclick="executePayDebt()" style="background:var(--i)">Confirmar Pago</button>
         </div>
     </div>
 
-    <!-- MODAL ARCHIVO -->
-    <div class="modal" id="modal-archive" onclick="closeModal('modal-archive')">
-        <div class="modal-content" onclick="event.stopPropagation()">
-            <h3>Cierre de Mes</h3>
-            <p style="color:#64748b; font-size:0.9rem; background: #fff8e1; padding: 10px; border-radius: 10px; border-left: 5px solid var(--d);">
-                <i class="fa-solid fa-triangle-exclamation"></i> <b>¡ATENCIÓN!</b><br>
-                Esta acción moverá todos los ingresos y gastos actuales al historial y limpiará la pantalla principal. No se puede deshacer.
-            </p>
-            <button class="btn-full" onclick="processArchive()" style="background:var(--i); margin-top: 15px;">Confirmar y Archivar</button>
-        </div>
-    </div>
-
-    <!-- MODAL HISTORIAL -->
-    <div class="modal" id="modal-history" onclick="closeModal('modal-history')">
-        <div class="modal-content" onclick="event.stopPropagation()">
-            <h3>Meses Archivados</h3>
-            <div id="archives-list"></div>
-        </div>
-    </div>
+    <!-- OTROS MODALES (Simplificados) -->
+    <div class="modal" id="modal-cat" onclick="closeModal('modal-cat')"><div class="modal-content" onclick="event.stopPropagation()"><h3>Categorías</h3><div id="cat-admin-list"></div><button class="btn-full" style="background:#94a3b8; margin-top:15px" onclick="closeModal('modal-cat')">Cerrar</button></div></div>
+    <div class="modal" id="modal-archive" onclick="closeModal('modal-archive')"><div class="modal-content" onclick="event.stopPropagation()"><h3>Cierre Mes</h3><button class="btn-full" onclick="processArchive()" style="background:var(--i)">Archivar</button></div></div>
+    <div class="modal" id="modal-history" onclick="closeModal('modal-history')"><div class="modal-content" onclick="event.stopPropagation()"><h3>Meses Archivados</h3><div id="archives-list"></div></div></div>
 
     <script>
-        // --- 1. CONFIGURACIÓN ---
         const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyr1dMKKAbqnnVvyGCTxYBhii5hmSR39zoSdURBYCYR_PTYK81QjwUQHjQtFLSucaNlpg/exec"; 
-        const APP_PIN = "9874"; // <--- CAMBIA TU PIN AQUÍ
+        const APP_PIN = "9874";
 
         let txs = [], debts = [], archives = [], catsInc = [], catsExp = [];
-        let filterType = 'all', filterCat = 'all', viewingArchive = null;
+        let filterType = 'all', filterCat = 'all', viewingArchive = null, debtToPay = null;
 
         const fmt = (n) => new Intl.NumberFormat('de-DE').format(Math.abs(n));
 
-        // --- 2. SEGURIDAD ---
         function checkLogin() {
-            const input = document.getElementById('pin-input').value;
-            if (input === APP_PIN) {
+            if (document.getElementById('pin-input').value === APP_PIN) {
                 document.getElementById('login-screen').style.display = 'none';
                 sessionStorage.setItem('loggedIn', 'true');
                 fetchFromGoogle();
-            } else {
-                alert("PIN Incorrecto. Inténtalo de nuevo.");
-                document.getElementById('pin-input').value = "";
-            }
+            } else { alert("PIN Incorrecto"); }
         }
+        if (sessionStorage.getItem('loggedIn') === 'true') { document.getElementById('login-screen').style.display = 'none'; fetchFromGoogle(); }
 
-        // Auto login si la sesión ya existe
-        if (sessionStorage.getItem('loggedIn') === 'true') {
-            document.getElementById('login-screen').style.display = 'none';
-            fetchFromGoogle();
-        }
-
-        // --- 3. COMUNICACIÓN CON GOOGLE ---
         async function fetchFromGoogle() {
             document.getElementById('loader').style.display = 'flex';
             try {
@@ -191,23 +175,20 @@
                 txs = d.txs; debts = d.debts; archives = d.archives;
                 catsInc = d.catsInc; catsExp = d.catsExp;
                 updateUI();
-            } catch (e) { console.error("Error al cargar datos"); }
+            } catch (e) { console.error(e); }
             document.getElementById('loader').style.display = 'none';
         }
 
         async function sync() {
             document.getElementById('loader').style.display = 'flex';
             const payload = { data: { txs, debts, archives, catsInc, catsExp } };
-            try {
-                await fetch(WEB_APP_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
-                setTimeout(updateUI, 800);
-            } catch (e) { alert("Error al sincronizar con la nube"); }
+            try { await fetch(WEB_APP_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) }); setTimeout(updateUI, 800); } catch (e) { alert("Error"); }
             document.getElementById('loader').style.display = 'none';
         }
 
-        // --- 4. LÓGICA DE INTERFAZ ---
         function updateUI() {
             const list = document.getElementById('transaction-list');
+            const banner = document.getElementById('category-total-banner');
             const data = viewingArchive || txs;
             list.innerHTML = '';
             
@@ -222,26 +203,62 @@
                 src.forEach(c => chips.innerHTML += `<div class="chip ${filterCat===c?'active':''}" onclick="setCatFilter('${c}')">${c}</div>`);
             }
 
-            const filtered = filterType === 'debt' ? debts.map(d=>({...d,isD:true})) : data.filter(t => {
-                const mType = filterType==='all' || (filterType==='plus'?t.amount>0:t.amount<0);
-                const mCat = filterCat==='all' || t.cat === filterCat;
-                return mType && mCat;
-            });
+            // LÓGICA DE FILTRADO AVANZADA (Para ver desgloses en ingresos)
+            let filtered = [];
+            if (filterType === 'debt') {
+                filtered = debts.map(d=>({...d,isD:true}));
+            } else if (filterType === 'plus' && filterCat !== 'all') {
+                // AQUÍ ESTÁ LA MAGIA: Si filtro un ingreso, muestro esa entrada Y los gastos que salieron de ella
+                filtered = data.filter(t => (t.amount > 0 && t.cat === filterCat) || (t.amount < 0 && t.source === filterCat));
+            } else {
+                filtered = data.filter(t => {
+                    const mType = filterType==='all' || (filterType==='plus'?t.amount>0:t.amount<0);
+                    const mCat = filterCat==='all' || t.cat === filterCat || t.source === filterCat;
+                    return mType && mCat;
+                });
+            }
+
+            // LÓGICA DEL BANNER DE TOTALES REFORZADA
+            if (filterCat !== 'all' && (filterType === 'plus' || filterType === 'minus')) {
+                banner.style.display = 'flex';
+                document.getElementById('cat-label').innerText = filterCat;
+                
+                const earned = data.filter(t => t.amount > 0 && t.cat === filterCat).reduce((a, b) => a + b.amount, 0);
+                const spent = Math.abs(data.filter(t => t.amount < 0 && t.source === filterCat).reduce((a, b) => a + b.amount, 0));
+                
+                if (filterType === 'plus') {
+                    document.getElementById('cat-earned').innerText = `$${fmt(earned)}`;
+                    document.getElementById('cat-spent').innerText = `$${fmt(spent)}`;
+                    const remaining = earned - spent;
+                    document.getElementById('cat-remaining').innerText = `$${fmt(remaining)}`;
+                    document.getElementById('cat-remaining').className = remaining >= 0 ? 'plus-txt' : 'minus-txt';
+                } else {
+                    const totalSpentCat = Math.abs(data.filter(t => t.amount < 0 && t.cat === filterCat).reduce((a, b) => a + b.amount, 0));
+                    document.getElementById('cat-remaining').innerText = `$${fmt(totalSpentCat)}`;
+                    document.getElementById('cat-remaining').className = 'minus-txt';
+                    // Ocultar filas de detalle en vista de gastos
+                    document.getElementById('cat-earned').parentNode.style.display = 'none';
+                    document.getElementById('cat-spent').parentNode.style.display = 'none';
+                }
+            } else { 
+                banner.style.display = 'none'; 
+                // Resetear visibilidad de filas para la próxima vez
+                document.getElementById('cat-earned').parentNode.style.display = 'flex';
+                document.getElementById('cat-spent').parentNode.style.display = 'flex';
+            }
 
             filtered.sort((a,b) => b.id - a.id).forEach(t => {
                 const div = document.createElement('div');
                 div.className = 'item-card';
-                div.innerHTML = `
-                    <div class="item-info">
-                        <b>${t.text}</b>
-                        <small>${t.date}</small><br>
-                        ${t.cat ? `<span class="tag">${t.cat}</span>` : ''}
-                    </div>
-                    <div style="display:flex; align-items:center; gap:10px;">
-                        ${t.isD && !viewingArchive ? `<button onclick="payDebt(${t.id})" style="background:var(--i); color:white; border:none; border-radius:8px; font-weight:800; font-size:0.65rem; padding:6px 10px">PAGAR</button>`:''}
-                        <span class="amount ${t.isD?'debt-txt':(t.amount>0?'plus-txt':'minus-txt')}">${t.isD?'':(t.amount>0?'+':'-')}$${fmt(t.amount)}</span>
-                        ${!viewingArchive ? `<i class="fa-solid fa-circle-xmark" style="color:#e2e8f0; font-size:1.3rem;" onclick="${t.isD?'delDb':'delTx'}(${t.id})"></i>`:''}
-                    </div>`;
+                div.innerHTML = `<div class="item-info">
+                    <b>${t.text}</b><small>${t.date}</small><br>
+                    ${t.cat ? `<span class="tag">${t.cat}</span>` : ''}
+                    ${t.source ? `<span class="tag source-tag">← ${t.source}</span>` : ''}
+                </div><div style="display:flex; align-items:center; gap:8px;">
+                    ${t.isD && !viewingArchive ? `<button onclick="startPayDebt(${t.id})" style="background:var(--i); color:white; border:none; border-radius:8px; font-weight:800; font-size:0.65rem; padding:6px 10px">PAGAR</button>`:''}
+                    <span class="amount ${t.isD?'debt-txt':(t.amount>0?'plus-txt':'minus-txt')}">$${fmt(t.amount)}</span>
+                    ${!viewingArchive ? `<i class="fa-solid fa-circle-xmark" style="color:#e2e8f0; font-size:1.3rem;" onclick="${t.isD?'delDb':'delTx'}(${t.id})"></i>`:''}
+                </div>`;
                 list.appendChild(div);
             });
 
@@ -251,104 +268,79 @@
             document.getElementById('total-inc').innerText = `+$${fmt(ti)}`;
             document.getElementById('total-exp').innerText = `-$${fmt(te)}`;
             document.getElementById('total-deb').innerText = `$${fmt(debts.reduce((a,b)=>a+b.amount,0))}`;
-            
             renderArchives(); renderCatAdmin();
         }
 
-        // --- 5. FUNCIONES DE NEGOCIO ---
+        // --- LÓGICA DE NEGOCIO ---
+        function refreshFormCats() {
+            const t = document.getElementById('tx-type').value;
+            const catSel = document.getElementById('tx-category');
+            const srcSel = document.getElementById('tx-source');
+            if(t === 'debt') {
+                document.getElementById('cat-group').style.display='none'; document.getElementById('source-group').style.display='none';
+            } else if(t === 'plus') {
+                document.getElementById('cat-group').style.display='block'; document.getElementById('source-group').style.display='none';
+                catSel.innerHTML = catsInc.map(c => `<option value="${c}">${c}</option>`).join('');
+            } else {
+                document.getElementById('cat-group').style.display='block'; document.getElementById('source-group').style.display='block';
+                catSel.innerHTML = catsExp.map(c => `<option value="${c}">${c}</option>`).join('');
+                srcSel.innerHTML = catsInc.map(c => `<option value="${c}">${c}</option>`).join('');
+            }
+        }
+
         document.getElementById('tx-form').addEventListener('submit', e => {
             e.preventDefault();
             const val = parseInt(document.getElementById('tx-amount').value.replace(/\./g,''));
             const type = document.getElementById('tx-type').value;
-            const item = { id:Date.now(), text:document.getElementById('tx-text').value, amount:val, date:new Date().toLocaleDateString('es-ES') };
-            if(type === 'debt') debts.push(item);
+            const item = { id:Date.now(), text:document.getElementById('tx-text').value, amount: (type==='minus'?-val:val), date:new Date().toLocaleDateString('es-ES'), cat:document.getElementById('tx-category').value };
+            if(type === 'debt') debts.push({id:Date.now(), text:item.text, amount:val, date:item.date});
             else { 
-                item.amount = type === 'minus' ? -val : val; 
-                item.cat = document.getElementById('tx-category').value; 
-                txs.push(item); 
+                if(type==='minus') item.source = document.getElementById('tx-source').value;
+                txs.push(item);
             }
             closeModal('modal-add'); sync();
         });
 
-        function payDebt(id) {
-            const d = debts.find(x=>x.id===id);
-            if(confirm(`¿Confirmas el pago de esta deuda por $${fmt(d.amount)}?\n\nEste monto se descontará de tus ingresos actuales.`)) {
-                txs.push({ id:Date.now(), text: "PAGO: "+d.text, amount: -d.amount, date: new Date().toLocaleDateString('es-ES'), cat: "Deuda" });
-                debts = debts.filter(x=>x.id!==id);
-                sync();
-            }
+        function startPayDebt(id) {
+            debtToPay = debts.find(x => x.id === id);
+            document.getElementById('pay-debt-info').innerText = `Pagar: ${debtToPay.text} ($${fmt(debtToPay.amount)})`;
+            document.getElementById('pay-debt-source').innerHTML = catsInc.map(c => `<option value="${c}">${c}</option>`).join('');
+            openModal('modal-pay-debt');
         }
 
-        function delTx(id) { 
-            if(confirm("¡ADVERTENCIA!\n\n¿Seguro que quieres eliminar este movimiento? Esta acción no se puede deshacer y alterará tu saldo.")) { 
-                txs = txs.filter(t => t.id !== id); 
-                sync(); 
-            } 
+        function executePayDebt() {
+            const src = document.getElementById('pay-debt-source').value;
+            txs.push({ id:Date.now(), text:"PAGO DEUDA: "+debtToPay.text, amount:-debtToPay.amount, date:new Date().toLocaleDateString('es-ES'), cat:"Deuda", source:src });
+            debts = debts.filter(x => x.id !== debtToPay.id);
+            closeModal('modal-pay-debt'); sync();
         }
 
-        function delDb(id) { 
-            if(confirm("¿Eliminar esta deuda de la lista? No se registrará ningún pago.")) { 
-                debts = debts.filter(d => d.id !== id); 
-                sync(); 
-            } 
-        }
-
+        // --- FUNCIONES RESTANTES (Iguales) ---
+        function setCatFilter(c) { filterCat = c; updateUI(); }
+        function setFilter(f) { filterType = (filterType===f)?'all':f; filterCat='all'; updateUI(); }
+        function openModal(id) { document.getElementById(id).style.display='flex'; if(id==='modal-add') refreshFormCats(); }
+        function closeModal(id) { document.getElementById(id).style.display='none'; }
+        function delTx(id) { if(confirm("¿Eliminar?")){ txs=txs.filter(t=>t.id!==id); sync(); }}
+        function delDb(id) { if(confirm("¿Eliminar?")){ debts=debts.filter(d=>d.id!==id); sync(); }}
+        function processArchive() { if(confirm("¿Archivar?")){ archives.push({id:Date.now(), period:txs[0].date+" al "+txs[txs.length-1].date, data:[...txs]}); txs=[]; sync(); closeModal('modal-archive'); } }
         function addCat() {
             const n = document.getElementById('new-cat-name').value.trim();
             const t = document.getElementById('new-cat-type').value;
             if(n) { (t==='inc'?catsInc:catsExp).push(n); document.getElementById('new-cat-name').value=''; updateUI(); sync(); }
         }
-
-        function processArchive() {
-            if(!txs.length) return;
-            if(confirm("¿Estás 100% seguro de archivar este mes?\n\nLos datos se guardarán en el historial y se limpiará la pantalla principal.")) {
-                archives.push({ id:Date.now(), period: txs[0].date+" al "+txs[txs.length-1].date, data:[...txs] });
-                txs = []; 
-                sync(); 
-                closeModal('modal-archive');
-            }
+        function moveCat(type, idx, dir) {
+            const arr = type==='inc' ? catsInc : catsExp;
+            if(idx+dir >= 0 && idx+dir < arr.length){ [arr[idx], arr[idx+dir]] = [arr[idx+dir], arr[idx]]; updateUI(); sync(); }
         }
-
-        // --- 6. UTILIDADES ---
         function renderCatAdmin() {
             const draw = (arr, t) => arr.map((c,i)=>`<div class="cat-item"><span>${c}</span><div>
                 <button onclick="moveCat('${t}',${i},-1)">↑</button><button onclick="moveCat('${t}',${i},1)">↓</button>
-                <button onclick="removeCat('${t}',${i})" style="color:var(--e); border:none; background:none; font-weight:bold; margin-left:5px">×</button></div></div>`).join('');
+                <button onclick="${t==='inc'?'catsInc':'catsExp'}.splice(${i},1);sync()" style="color:var(--e); border:none; background:none; font-weight:bold; margin-left:5px">×</button></div></div>`).join('');
             document.getElementById('cat-admin-list').innerHTML = `<p style="color:var(--i); font-size:0.7rem; font-weight:bold; margin-top:10px">INGRESOS</p>${draw(catsInc,'inc')}<p style="color:var(--e); font-size:0.7rem; font-weight:bold; margin-top:10px">GASTOS</p>${draw(catsExp,'exp')}`;
         }
-
-        function removeCat(type, idx) {
-            if(confirm("¿Quieres eliminar esta categoría?\n\nLos registros que ya la usan no se verán afectados, pero ya no podrás seleccionarla para nuevos gastos.")) {
-                if(type === 'inc') catsInc.splice(idx, 1);
-                else catsExp.splice(idx, 1);
-                sync();
-            }
-        }
-
-        function moveCat(type, idx, dir) {
-            const arr = type==='inc' ? catsInc : catsExp;
-            if(idx+dir >= 0 && idx+dir < arr.length){ 
-                [arr[idx], arr[idx+dir]] = [arr[idx+dir], arr[idx]]; 
-                updateUI(); sync(); 
-            }
-        }
-
-        function renderArchives() {
-            document.getElementById('archives-list').innerHTML = archives.map(a => `<div class="item-card" onclick="loadArch(${a.id})"><b>${a.period}</b><i class="fa fa-chevron-right"></i></div>`).join('');
-        }
+        function renderArchives() { document.getElementById('archives-list').innerHTML = archives.map(a => `<div class="item-card" onclick="loadArch(${a.id})"><b>${a.period}</b></div>`).join(''); }
         function loadArch(id) { viewingArchive = archives.find(x=>x.id===id).data; document.getElementById('archive-banner').style.display='block'; updateUI(); closeModal('modal-history'); }
         function exitArchiveMode() { viewingArchive = null; document.getElementById('archive-banner').style.display='none'; updateUI(); }
-        function setFilter(f) { filterType = (filterType===f)?'all':f; filterCat='all'; updateUI(); }
-        function setCatFilter(c) { filterCat = c; updateUI(); }
-        function openModal(id) { document.getElementById(id).style.display='flex'; if(id==='modal-add') refreshFormCats(); }
-        function closeModal(id) { document.getElementById(id).style.display='none'; }
-        
-        function refreshFormCats() {
-            const t = document.getElementById('tx-type').value;
-            const s = document.getElementById('tx-category');
-            s.style.display = t==='debt'?'none':'block';
-            s.innerHTML = (t==='plus'?catsInc:catsExp).map(c=>`<option value="${c}">${c}</option>`).join('');
-        }
         document.getElementById('tx-amount').addEventListener('input',e=>{
             let v = e.target.value.replace(/\D/g,""); e.target.value = v?fmt(v):"";
         });
