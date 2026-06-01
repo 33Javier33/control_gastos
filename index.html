@@ -190,6 +190,14 @@
 
         const fmt = (n) => new Intl.NumberFormat('de-DE').format(Math.abs(n));
 
+        function parseDate(d) {
+            if (!d) return '';
+            if (typeof d === 'string' && /^\d{1,2}\/\d{1,2}\/\d{4}/.test(d)) return d;
+            const dt = new Date(d);
+            if (isNaN(dt.getTime())) return String(d);
+            return dt.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        }
+
         function checkLogin() {
             if (document.getElementById('pin-input').value === APP_PIN) {
                 document.getElementById('login-screen').style.display = 'none';
@@ -204,7 +212,9 @@
             try {
                 const response = await fetch(WEB_APP_URL);
                 const d = await response.json();
-                txs = d.txs; debts = d.debts; archives = d.archives;
+                txs = d.txs.map(t => ({...t, date: parseDate(t.date)}));
+                debts = d.debts.map(t => ({...t, date: parseDate(t.date)}));
+                archives = d.archives.map(a => ({...a, data: a.data.map(t => ({...t, date: parseDate(t.date)}))}));
                 catsInc = d.catsInc || []; catsExp = d.catsExp || []; catsSav = d.catsSav || ["Emergencia", "Viajes"];
                 updateUI();
             } catch (e) { console.error(e); }
