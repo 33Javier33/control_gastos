@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3730a3"/>
+      <stop offset="100%" stop-color="#7c3aed"/>
+    </linearGradient>
+    <linearGradient id="shine" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.18)"/>
+      <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Fondo redondeado -->
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <!-- Brillo superior -->
+  <rect width="512" height="256" rx="112" fill="url(#shine)"/>
+
+  <!-- Cuerpo de la billetera -->
+  <rect x="72" y="168" width="368" height="228" rx="34" fill="white" opacity="0.95"/>
+  <!-- Solapa superior de la billetera -->
+  <rect x="72" y="138" width="216" height="74" rx="26" fill="white" opacity="0.72"/>
+
+  <!-- Bolsillo de moneda (derecha) -->
+  <rect x="322" y="240" width="118" height="88" rx="22" fill="#ede9fe"/>
+  <!-- Moneda interior -->
+  <circle cx="381" cy="284" r="28" fill="#4f46e5"/>
+  <text x="381" y="293" font-family="Arial Black, Arial, sans-serif"
+        font-size="28" font-weight="900" fill="white"
+        text-anchor="middle">$</text>
+
+  <!-- Línea de tendencia (verde) dentro de la billetera -->
+  <polyline
+    points="108,348  162,318  222,335  292,294  364,265"
+    fill="none" stroke="#10b981" stroke-width="13"
+    stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Punta de flecha -->
+  <polygon points="364,248 390,278 338,278" fill="#10b981"/>
+
+  <!-- Reflejo inferior sutil -->
+  <rect x="72" y="340" width="368" height="56" rx="0 0 34 34" fill="rgba(0,0,0,0.04)"/>
+</svg>

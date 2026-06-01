@@ -4,6 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Control Financiero</title>
+
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#4f46e5">
+
+    <!-- iOS / Safari -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Gastos">
+    <link rel="apple-touch-icon" href="/icons/icon.svg">
+
+    <!-- Android / General -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="Control Financiero">
+    <link rel="icon" type="image/svg+xml" href="/icons/icon.svg">
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root { --p: #4f46e5; --i: #10b981; --e: #ef4444; --d: #f59e0b; --s: #06b6d4; --bg: #f8fafc; --card: #ffffff; --text: #1e293b; }
@@ -687,6 +703,13 @@
             let v = e.target.value.replace(/\D/g,"");
             e.target.value = v ? fmt(v) : "";
         });
+
+        // ── SERVICE WORKER ──
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').catch(() => {});
+            });
+        }
     </script>
 </body>
 </html>
