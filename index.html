@@ -109,7 +109,7 @@
     <!-- MODAL REGISTRO -->
     <div class="modal" id="modal-add" onclick="closeModal('modal-add')">
         <div class="modal-content" onclick="event.stopPropagation()">
-            <h3>Nuevo Registro</h3>
+            <h3 id="modal-add-title">Nuevo Registro</h3>
             <form id="tx-form">
                 <input type="text" id="tx-text" placeholder="Concepto" required>
                 <input type="text" inputmode="numeric" id="tx-amount" placeholder="Monto" required>
@@ -127,7 +127,7 @@
                     <label style="font-size:0.7rem; color:var(--p)">¿De qué ingreso sale el dinero?</label>
                     <select id="tx-source"></select>
                 </div>
-                <button type="submit" class="btn-full">Guardar Movimiento</button>
+                <button type="submit" id="modal-add-btn" class="btn-full">Guardar Movimiento</button>
             </form>
         </div>
     </div>
@@ -170,6 +170,7 @@
 
         let txs = [], debts = [], archives = [], catsInc = [], catsExp = [], catsSav = [];
         let filterType = 'all', filterCat = 'all', viewingArchive = null, debtToPay = null;
+        let editingTxId = null, editingIsDebt = false;
 
         const fmt = (n) => new Intl.NumberFormat('de-DE').format(Math.abs(n));
 
@@ -269,6 +270,7 @@
                 </div><div style="display:flex; align-items:center; gap:8px;">
                     ${t.isD && !viewingArchive ? `<button onclick="startPayDebt(${t.id})" style="background:var(--i); color:white; border:none; border-radius:8px; font-weight:800; font-size:0.65rem; padding:6px 10px">PAGAR</button>`:''}
                     <span class="amount ${t.isD?'debt-txt':(t.isSaving?'save-txt':(t.amount>0?'plus-txt':'minus-txt'))}">$${fmt(t.amount)}</span>
+                    ${!viewingArchive ? `<i class="fa-solid fa-pen-to-square" style="color:#94a3b8; font-size:1.1rem; cursor:pointer;" onclick="${t.isD?'editDb':'editTx'}(${t.id})"></i>`:''}
                     ${!viewingArchive ? `<i class="fa-solid fa-circle-xmark" style="color:#e2e8f0; font-size:1.3rem;" onclick="${t.isD?'delDb':'delTx'}(${t.id})"></i>`:''}
                 </div>`;
                 list.appendChild(div);
@@ -305,13 +307,30 @@
             e.preventDefault();
             const val = parseInt(document.getElementById('tx-amount').value.replace(/\./g,''));
             const type = document.getElementById('tx-type').value;
-            const item = { id:Date.now(), text:document.getElementById('tx-text').value, amount:val, date:new Date().toLocaleDateString('es-ES') };
-            if(type==='debt') debts.push(item);
-            else {
-                item.cat = document.getElementById('tx-category').value;
-                if(type==='save'){ item.amount = -val; item.isSaving = true; item.source = document.getElementById('tx-source').value; }
-                if(type==='minus'){ item.amount = -val; item.source = document.getElementById('tx-source').value; }
-                txs.push(item);
+
+            if (editingTxId !== null) {
+                if (editingIsDebt) {
+                    const d = debts.find(x => x.id === editingTxId);
+                    if (d) { d.text = document.getElementById('tx-text').value; d.amount = val; }
+                } else {
+                    const t = txs.find(x => x.id === editingTxId);
+                    if (t) {
+                        t.text = document.getElementById('tx-text').value;
+                        t.cat = type !== 'debt' ? document.getElementById('tx-category').value : '';
+                        if (type === 'save') { t.amount = -val; t.isSaving = true; t.source = document.getElementById('tx-source').value; }
+                        else if (type === 'minus') { t.amount = -val; t.isSaving = false; t.source = document.getElementById('tx-source').value; }
+                        else { t.amount = val; t.isSaving = false; t.source = ''; }
+                    }
+                }
+            } else {
+                const item = { id:Date.now(), text:document.getElementById('tx-text').value, amount:val, date:new Date().toLocaleDateString('es-ES') };
+                if(type==='debt') debts.push(item);
+                else {
+                    item.cat = document.getElementById('tx-category').value;
+                    if(type==='save'){ item.amount = -val; item.isSaving = true; item.source = document.getElementById('tx-source').value; }
+                    if(type==='minus'){ item.amount = -val; item.source = document.getElementById('tx-source').value; }
+                    txs.push(item);
+                }
             }
             closeModal('modal-add'); sync();
         });
@@ -348,8 +367,49 @@
 
         function setCatFilter(c) { filterCat = c; updateUI(); }
         function setFilter(f) { filterType = (filterType===f)?'all':f; filterCat='all'; updateUI(); }
-        function openModal(id) { document.getElementById(id).style.display='flex'; if(id==='modal-add') refreshFormCats(); }
-        function closeModal(id) { document.getElementById(id).style.display='none'; }
+        function openModal(id) {
+            document.getElementById(id).style.display='flex';
+            if(id==='modal-add') {
+                editingTxId = null; editingIsDebt = false;
+                document.getElementById('tx-text').value = '';
+                document.getElementById('tx-amount').value = '';
+                document.getElementById('tx-type').value = 'plus';
+                document.getElementById('modal-add-title').innerText = 'Nuevo Registro';
+                document.getElementById('modal-add-btn').innerText = 'Guardar Movimiento';
+                refreshFormCats();
+            }
+        }
+        function closeModal(id) {
+            document.getElementById(id).style.display='none';
+            if(id==='modal-add') { editingTxId = null; editingIsDebt = false; }
+        }
+        function editTx(id) {
+            const t = txs.find(x => x.id === id);
+            if (!t) return;
+            editingTxId = id; editingIsDebt = false;
+            document.getElementById('tx-text').value = t.text;
+            document.getElementById('tx-amount').value = fmt(Math.abs(t.amount));
+            const type = t.isSaving ? 'save' : (t.amount < 0 ? 'minus' : 'plus');
+            document.getElementById('tx-type').value = type;
+            refreshFormCats();
+            if (t.cat) document.getElementById('tx-category').value = t.cat;
+            if (t.source) document.getElementById('tx-source').value = t.source;
+            document.getElementById('modal-add-title').innerText = 'Editar Registro';
+            document.getElementById('modal-add-btn').innerText = 'Guardar Cambios';
+            document.getElementById('modal-add').style.display = 'flex';
+        }
+        function editDb(id) {
+            const d = debts.find(x => x.id === id);
+            if (!d) return;
+            editingTxId = id; editingIsDebt = true;
+            document.getElementById('tx-text').value = d.text;
+            document.getElementById('tx-amount').value = fmt(d.amount);
+            document.getElementById('tx-type').value = 'debt';
+            refreshFormCats();
+            document.getElementById('modal-add-title').innerText = 'Editar Deuda';
+            document.getElementById('modal-add-btn').innerText = 'Guardar Cambios';
+            document.getElementById('modal-add').style.display = 'flex';
+        }
         function delTx(id) { if(confirm("¿Eliminar?")){ txs=txs.filter(t=>t.id!==id); sync(); }}
         function delDb(id) { if(confirm("¿Eliminar?")){ debts=debts.filter(d=>d.id!==id); sync(); }}
         function renderArchives() { document.getElementById('archives-list').innerHTML = archives.map(a => `<div class="item-card" onclick="loadArch(${a.id})"><b>${a.period}</b></div>`).join(''); }
