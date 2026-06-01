@@ -101,6 +101,14 @@
         <div class="banner-row"><span style="color:#64748b">Ahorrado:</span> <span id="cat-saved-from">$0</span></div>
     </div>
 
+    <div id="archive-banner" style="display:none; align-items:center; justify-content:space-between; margin: 0 20px 10px; padding: 12px 15px; background: #fef3c7; border-radius: 15px; border: 1.5px solid #f59e0b;">
+        <div>
+            <span style="font-size:0.65rem; font-weight:bold; color:#92400e; text-transform:uppercase;">Viendo archivo</span>
+            <div id="archive-banner-period" style="font-size:0.82rem; color:#78350f; font-weight:600;"></div>
+        </div>
+        <button onclick="exitArchiveMode()" style="background:var(--p); color:white; border:none; border-radius:10px; padding:8px 16px; font-weight:bold; font-size:0.85rem;">← Volver</button>
+    </div>
+
     <div class="main-feed"><div id="transaction-list"></div></div>
 
     <div class="bottom-bar">
@@ -177,7 +185,7 @@
         const APP_PIN = "9874";
 
         let txs = [], debts = [], archives = [], catsInc = [], catsExp = [], catsSav = [];
-        let filterType = 'all', filterCat = 'all', viewingArchive = null, debtToPay = null;
+        let filterType = 'all', filterCat = 'all', viewingArchive = null, viewingArchivePeriod = null, debtToPay = null;
         let editingTxId = null, editingIsDebt = false;
 
         const fmt = (n) => new Intl.NumberFormat('de-DE').format(Math.abs(n));
@@ -213,8 +221,16 @@
         function updateUI() {
             const list = document.getElementById('transaction-list');
             const banner = document.getElementById('category-total-banner');
+            const archBanner = document.getElementById('archive-banner');
             const data = viewingArchive || txs;
             list.innerHTML = '';
+
+            if (viewingArchive) {
+                archBanner.style.display = 'flex';
+                document.getElementById('archive-banner-period').innerText = viewingArchivePeriod || '';
+            } else {
+                archBanner.style.display = 'none';
+            }
             
             document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('active'));
             if(filterType !== 'all') document.getElementById('card-'+filterType).classList.add('active');
@@ -421,8 +437,13 @@
         function delTx(id) { if(confirm("¿Eliminar?")){ txs=txs.filter(t=>t.id!==id); sync(); }}
         function delDb(id) { if(confirm("¿Eliminar?")){ debts=debts.filter(d=>d.id!==id); sync(); }}
         function renderArchives() { document.getElementById('archives-list').innerHTML = archives.map(a => `<div class="item-card" onclick="loadArch(${a.id})"><b>${a.period}</b></div>`).join(''); }
-        function loadArch(id) { viewingArchive = archives.find(x=>x.id===id).data; document.getElementById('loader').style.display='none'; updateUI(); closeModal('modal-history'); }
-        function exitArchiveMode() { viewingArchive = null; updateUI(); }
+        function loadArch(id) {
+            const arch = archives.find(x=>x.id===id);
+            viewingArchive = arch.data; viewingArchivePeriod = arch.period;
+            document.getElementById('loader').style.display='none';
+            updateUI(); closeModal('modal-history');
+        }
+        function exitArchiveMode() { viewingArchive = null; viewingArchivePeriod = null; updateUI(); }
         function processArchive() { if(confirm("¿Archivar?")){ archives.push({id:Date.now(), period:txs[0].date+" al "+txs[txs.length-1].date, data:[...txs]}); txs=[]; sync(); closeModal('modal-archive'); } }
         document.getElementById('tx-amount').addEventListener('input',e=>{ let v = e.target.value.replace(/\D/g,""); e.target.value = v?fmt(v):""; });
 
