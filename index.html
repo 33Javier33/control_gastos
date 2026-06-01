@@ -3,81 +3,131 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Ahorros y Gastos</title>
+    <title>Control Financiero</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root { --p: #4f46e5; --i: #10b981; --e: #ef4444; --d: #f59e0b; --s: #06b6d4; --bg: #f8fafc; --card: #ffffff; --text: #1e293b; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
-        body { font-family: sans-serif; background: var(--bg); color: var(--text); margin: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-        
-        /* Login */
-        #login-screen { position: fixed; inset: 0; background: var(--p); z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; }
-        .login-box { background: rgba(255,255,255,0.1); padding: 30px; border-radius: 25px; backdrop-filter: blur(10px); text-align: center; width: 85%; max-width: 350px; }
-        .login-box input { width: 100%; padding: 15px; border-radius: 15px; border: none; margin: 20px 0; font-size: 1.5rem; text-align: center; letter-spacing: 10px; color: var(--p); }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
 
-        /* Loader */
-        #loader { position: fixed; inset: 0; background: rgba(255,255,255,0.9); z-index: 500; display: none; flex-direction: column; align-items: center; justify-content: center; }
+        /* ── LOGIN ── */
+        #login-screen { position: fixed; inset: 0; background: linear-gradient(160deg, #3730a3 0%, #6d28d9 100%); z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; padding: 20px; padding-top: env(safe-area-inset-top, 20px); }
+        .login-box { background: rgba(255,255,255,0.13); padding: 32px 26px; border-radius: 28px; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); text-align: center; width: 100%; max-width: 390px; border: 1px solid rgba(255,255,255,0.22); box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+        .login-box .icon { font-size: 2.8rem; margin-bottom: 6px; }
+        .login-box h3 { margin: 6px 0 22px; font-size: 1.35rem; font-weight: 700; }
+
+        .auth-tabs { display: flex; background: rgba(0,0,0,0.25); border-radius: 14px; padding: 4px; margin-bottom: 20px; }
+        .auth-tab { flex: 1; padding: 11px; border: none; background: transparent; color: rgba(255,255,255,0.6); font-weight: 700; border-radius: 11px; font-size: 0.95rem; cursor: pointer; transition: all 0.2s; }
+        .auth-tab.active { background: white; color: var(--p); }
+
+        .auth-input { width: 100%; padding: 15px 16px; border-radius: 14px; border: 1.5px solid rgba(255,255,255,0.22); margin-bottom: 11px; font-size: 16px; background: rgba(255,255,255,0.13); color: white; -webkit-appearance: none; display: block; }
+        .auth-input::placeholder { color: rgba(255,255,255,0.5); }
+        .auth-input:focus { border-color: rgba(255,255,255,0.55); background: rgba(255,255,255,0.2); outline: none; }
+
+        .btn-auth { width: 100%; padding: 16px; border-radius: 14px; border: none; background: white; color: var(--p); font-weight: 800; font-size: 1rem; margin-top: 6px; cursor: pointer; letter-spacing: 0.3px; }
+        .btn-auth:active { opacity: 0.87; transform: scale(0.99); }
+
+        .auth-msg { font-size: 0.82rem; margin-bottom: 11px; padding: 10px 14px; border-radius: 11px; text-align: left; display: none; line-height: 1.4; }
+        .auth-msg.error { background: rgba(239,68,68,0.22); color: #fca5a5; border: 1px solid rgba(239,68,68,0.3); }
+        .auth-msg.success { background: rgba(16,185,129,0.22); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.3); }
+
+        .lockout-bar { height: 4px; background: rgba(255,255,255,0.18); border-radius: 4px; margin-bottom: 11px; display: none; overflow: hidden; }
+        .lockout-fill { height: 100%; background: #fca5a5; border-radius: 4px; transition: width 1s linear; }
+
+        /* ── LOADER ── */
+        #loader { position: fixed; inset: 0; background: rgba(255,255,255,0.92); z-index: 500; display: none; flex-direction: column; align-items: center; justify-content: center; }
         .spinner { width: 40px; height: 40px; border: 4px solid #ddd; border-top-color: var(--p); border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        header { background: var(--p); color: white; padding: 25px 20px 45px; text-align: center; border-radius: 0 0 30px 30px; position: relative; }
-        header h1 { font-size: 1.8rem; margin: 5px 0 0; font-weight: 800; }
-        .nav-btn { position: absolute; top: 20px; background: rgba(255,255,255,0.15); border: none; color: white; padding: 10px; border-radius: 12px; font-size: 1.1rem; }
+        /* ── HEADER ── */
+        header { background: var(--p); color: white; padding: calc(env(safe-area-inset-top, 0px) + 14px) 20px 45px; text-align: center; border-radius: 0 0 30px 30px; position: relative; }
+        header h1 { font-size: 1.8rem; margin: 4px 0 0; font-weight: 800; }
+        #header-user { font-size: 0.7rem; opacity: 0.8; margin-top: 2px; min-height: 1em; }
+        .nav-btn { position: absolute; top: calc(env(safe-area-inset-top, 0px) + 14px); background: rgba(255,255,255,0.15); border: none; color: white; padding: 11px 13px; border-radius: 12px; font-size: 1.05rem; cursor: pointer; }
 
-        /* Summary Cards */
+        /* ── SUMMARY ── */
         .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; padding: 0 10px; margin-top: -25px; z-index: 5; }
-        .stat-card { background: var(--card); padding: 10px 2px; border-radius: 12px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 2px solid transparent; }
+        .stat-card { background: var(--card); padding: 10px 2px; border-radius: 12px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 2px solid transparent; cursor: pointer; }
         .stat-card.active { border-color: var(--p); }
         .stat-card b { display: block; font-size: 0.55rem; color: #888; text-transform: uppercase; }
         .stat-card span { font-size: 0.75rem; font-weight: 800; }
 
-        .category-bar { display: flex; gap: 8px; overflow-x: auto; padding: 15px 20px 5px; scrollbar-width: none; }
-        .chip { background: white; padding: 8px 16px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; color: #64748b; border: 1.5px solid #e2e8f0; white-space: nowrap; }
+        /* ── CHIPS ── */
+        .category-bar { display: flex; gap: 8px; overflow-x: auto; padding: 15px 20px 5px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+        .category-bar::-webkit-scrollbar { display: none; }
+        .chip { background: white; padding: 8px 16px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; color: #64748b; border: 1.5px solid #e2e8f0; white-space: nowrap; cursor: pointer; }
         .chip.active { background: var(--p); color: white; border-color: var(--p); }
 
-        /* Info Banner */
+        /* ── BANNERS ── */
         #category-total-banner { margin: 0 20px 10px; padding: 15px; background: white; border-radius: 15px; display: none; flex-direction: column; border: 1.5px dashed var(--p); }
         .banner-row { display: flex; justify-content: space-between; align-items: center; margin: 3px 0; font-size: 0.85rem; }
+        #archive-banner { display: none; align-items: center; justify-content: space-between; margin: 0 20px 10px; padding: 12px 15px; background: #fef3c7; border-radius: 15px; border: 1.5px solid #f59e0b; }
 
-        /* Feed */
-        .main-feed { flex: 1; overflow-y: auto; padding: 0 20px 80px; }
+        /* ── FEED ── */
+        .main-feed { flex: 1; overflow-y: auto; padding: 0 20px 80px; -webkit-overflow-scrolling: touch; }
         .item-card { background: var(--card); padding: 16px; border-radius: 18px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
         .item-info b { display: block; font-size: 0.95rem; }
         .tag { display: inline-block; font-size: 0.6rem; background: #f1f5f9; padding: 2px 6px; border-radius: 5px; font-weight: bold; margin-top: 4px; color: #64748b; }
         .source-tag { background: #e0e7ff; color: var(--p); border: 1px solid #c7d2fe; }
         .save-tag { background: #cffafe; color: var(--s); border: 1px solid #a5f3fc; }
-
         .plus-txt { color: var(--i); } .minus-txt { color: var(--e); } .debt-txt { color: var(--d); } .save-txt { color: var(--s); }
 
-        /* Barra inferior */
-        .bottom-bar { position: fixed; bottom: 0; left: 0; right: 0; background: white; display: flex; border-top: 1.5px solid #e2e8f0; z-index: 50; }
-        .bottom-bar button { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; background: none; border: none; padding: 12px 10px 16px; font-size: 0.65rem; font-weight: bold; color: #94a3b8; cursor: pointer; }
+        /* ── BOTTOM BAR ── */
+        .bottom-bar { position: fixed; bottom: 0; left: 0; right: 0; background: white; display: flex; border-top: 1.5px solid #e2e8f0; z-index: 50; padding-bottom: env(safe-area-inset-bottom, 0px); }
+        .bottom-bar button { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; background: none; border: none; padding: 12px 10px 14px; font-size: 0.65rem; font-weight: bold; color: #94a3b8; cursor: pointer; }
         .bottom-bar button i { font-size: 1.3rem; }
         .bottom-bar .btn-primary { color: var(--p); }
 
+        /* ── MODALS ── */
         .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: flex-end; z-index: 100; backdrop-filter: blur(2px); }
-        .modal-content { background: white; width: 100%; padding: 25px; border-radius: 30px 30px 0 0; max-height: 85vh; overflow-y: auto; }
-        input, select, .btn-full { width: 100%; padding: 16px; margin-bottom: 10px; border-radius: 15px; border: 1px solid #e2e8f0; font-size: 1rem; }
-        .btn-full { background: var(--p); color: white; border: none; font-weight: bold; }
+        .modal-content { background: white; width: 100%; padding: 25px; border-radius: 30px 30px 0 0; max-height: 85dvh; overflow-y: auto; padding-bottom: calc(25px + env(safe-area-inset-bottom, 0px)); }
+        input, select, .btn-full { width: 100%; padding: 16px; margin-bottom: 10px; border-radius: 15px; border: 1px solid #e2e8f0; font-size: 16px; -webkit-appearance: none; background: white; }
+        .btn-full { background: var(--p); color: white; border: none; font-weight: bold; font-size: 1rem; cursor: pointer; }
         .cat-item { display: flex; justify-content: space-between; padding: 12px; background: #f8fafc; border-radius: 12px; margin-bottom: 8px; align-items: center; }
     </style>
 </head>
 <body>
 
+    <!-- ── PANTALLA LOGIN ── -->
     <div id="login-screen">
         <div class="login-box">
-            <i class="fa-solid fa-vault" style="font-size: 3rem; margin-bottom: 10px;"></i>
+            <div class="icon"><i class="fa-solid fa-vault"></i></div>
             <h3>Control Financiero</h3>
-            <input type="password" id="pin-input" inputmode="numeric" placeholder="****" maxlength="4">
-            <button class="btn-full" onclick="checkLogin()" style="background: var(--i);">Desbloquear</button>
+
+            <div class="auth-tabs">
+                <button class="auth-tab active" id="tab-login" onclick="switchTab('login')">Ingresar</button>
+                <button class="auth-tab" id="tab-register" onclick="switchTab('register')">Registrarse</button>
+            </div>
+
+            <!-- INGRESAR -->
+            <div id="form-login">
+                <input class="auth-input" type="text" id="login-rut" placeholder="RUT (ej: 12.345.678-9)" inputmode="numeric" autocomplete="username">
+                <input class="auth-input" type="password" id="login-pass" placeholder="Contraseña" autocomplete="current-password">
+                <div class="lockout-bar" id="lockout-bar"><div class="lockout-fill" id="lockout-fill"></div></div>
+                <div class="auth-msg error" id="login-error"></div>
+                <button class="btn-auth" onclick="doLogin()"><i class="fa-solid fa-right-to-bracket"></i> &nbsp;Ingresar</button>
+            </div>
+
+            <!-- REGISTRARSE -->
+            <div id="form-register" style="display:none">
+                <input class="auth-input" type="text" id="reg-rut" placeholder="RUT (ej: 12.345.678-9)" inputmode="numeric">
+                <input class="auth-input" type="text" id="reg-nombre" placeholder="Nombre completo" autocomplete="name">
+                <input class="auth-input" type="password" id="reg-pass" placeholder="Contraseña (mín. 6 caracteres)" autocomplete="new-password">
+                <input class="auth-input" type="password" id="reg-pass2" placeholder="Confirmar contraseña" autocomplete="new-password">
+                <div class="auth-msg error" id="reg-error"></div>
+                <div class="auth-msg success" id="reg-success"></div>
+                <button class="btn-auth" onclick="doRegister()"><i class="fa-solid fa-user-plus"></i> &nbsp;Crear Cuenta</button>
+            </div>
         </div>
     </div>
 
     <div id="loader"><div class="spinner"></div><p>Sincronizando...</p></div>
 
     <header>
-        <button class="nav-btn" style="left:20px" onclick="openModal('modal-history')"><i class="fa-solid fa-clock-rotate-left"></i></button>
-        <button class="nav-btn" style="right:20px" onclick="openModal('modal-archive')"><i class="fa-solid fa-box-archive"></i></button>
+        <button class="nav-btn" style="left:15px" onclick="openModal('modal-history')"><i class="fa-solid fa-clock-rotate-left"></i></button>
+        <button class="nav-btn" style="right:58px" onclick="openModal('modal-archive')"><i class="fa-solid fa-box-archive"></i></button>
+        <button class="nav-btn" style="right:15px" onclick="doLogout()" title="Cerrar sesión"><i class="fa-solid fa-right-from-bracket"></i></button>
+        <div id="header-user"></div>
         <span style="font-size:0.7rem; opacity:0.8;">DISPONIBLE TOTAL</span>
         <h1 id="balance-display">$0</h1>
     </header>
@@ -93,7 +143,7 @@
 
     <div id="category-total-banner">
         <div class="banner-row" style="border-bottom: 1px solid #eee; padding-bottom: 5px;">
-            <span id="cat-label" style="font-weight:bold">Categoría</span> 
+            <span id="cat-label" style="font-weight:bold">Categoría</span>
             <span id="cat-remaining">$0</span>
         </div>
         <div class="banner-row"><span style="color:#64748b">Ingresado:</span> <span id="cat-earned">$0</span></div>
@@ -101,12 +151,12 @@
         <div class="banner-row"><span style="color:#64748b">Ahorrado:</span> <span id="cat-saved-from">$0</span></div>
     </div>
 
-    <div id="archive-banner" style="display:none; align-items:center; justify-content:space-between; margin: 0 20px 10px; padding: 12px 15px; background: #fef3c7; border-radius: 15px; border: 1.5px solid #f59e0b;">
+    <div id="archive-banner">
         <div>
             <span style="font-size:0.65rem; font-weight:bold; color:#92400e; text-transform:uppercase;">Viendo archivo</span>
             <div id="archive-banner-period" style="font-size:0.82rem; color:#78350f; font-weight:600;"></div>
         </div>
-        <button onclick="exitArchiveMode()" style="background:var(--p); color:white; border:none; border-radius:10px; padding:8px 16px; font-weight:bold; font-size:0.85rem;">← Volver</button>
+        <button onclick="exitArchiveMode()" style="background:var(--p); color:white; border:none; border-radius:10px; padding:8px 16px; font-weight:bold; font-size:0.85rem; cursor:pointer;">← Volver</button>
     </div>
 
     <div class="main-feed"><div id="transaction-list"></div></div>
@@ -122,7 +172,7 @@
         </button>
     </div>
 
-    <!-- MODAL REGISTRO -->
+    <!-- MODAL NUEVO/EDITAR MOVIMIENTO -->
     <div class="modal" id="modal-add" onclick="closeModal('modal-add')">
         <div class="modal-content" onclick="event.stopPropagation()">
             <h3 id="modal-add-title">Nuevo Registro</h3>
@@ -170,24 +220,38 @@
                     <option value="exp">Gasto</option>
                     <option value="sav">Ahorro</option>
                 </select>
-                <button onclick="addCat()" style="background:var(--p); color:white; border:none; padding:10px 15px; border-radius:12px">+</button>
+                <button onclick="addCat()" style="background:var(--p); color:white; border:none; padding:10px 15px; border-radius:12px; cursor:pointer;">+</button>
             </div>
             <div id="cat-admin-list"></div>
             <button class="btn-full" style="background:#94a3b8; margin-top:15px" onclick="closeModal('modal-cat')">Cerrar</button>
         </div>
     </div>
 
-    <div class="modal" id="modal-archive" onclick="closeModal('modal-archive')"><div class="modal-content" onclick="event.stopPropagation()"><h3>Cierre Mes</h3><button class="btn-full" onclick="processArchive()" style="background:var(--i)">Archivar</button></div></div>
-    <div class="modal" id="modal-history" onclick="closeModal('modal-history')"><div class="modal-content" onclick="event.stopPropagation()"><h3>Historial</h3><div id="archives-list"></div></div></div>
+    <div class="modal" id="modal-archive" onclick="closeModal('modal-archive')">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h3>Cierre de Mes</h3>
+            <p style="color:#64748b; font-size:0.9rem;">Archiva los movimientos del período actual y comienza uno nuevo.</p>
+            <button class="btn-full" onclick="processArchive()" style="background:var(--i)">Archivar mes actual</button>
+        </div>
+    </div>
+    <div class="modal" id="modal-history" onclick="closeModal('modal-history')">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h3>Historial</h3>
+            <div id="archives-list"></div>
+        </div>
+    </div>
 
     <script>
-        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyr1dMKKAbqnnVvyGCTxYBhii5hmSR39zoSdURBYCYR_PTYK81QjwUQHjQtFLSucaNlpg/exec"; 
-        const APP_PIN = "9874";
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyr1dMKKAbqnnVvyGCTxYBhii5hmSR39zoSdURBYCYR_PTYK81QjwUQHjQtFLSucaNlpg/exec";
 
+        // ── ESTADO GLOBAL ──
         let txs = [], debts = [], archives = [], catsInc = [], catsExp = [], catsSav = [];
         let filterType = 'all', filterCat = 'all', viewingArchive = null, viewingArchivePeriod = null, debtToPay = null;
         let editingTxId = null, editingIsDebt = false;
+        let currentUser = null;
+        let loginAttempts = 0, lockoutUntil = 0, lockoutTimer = null;
 
+        // ── UTILIDADES ──
         const fmt = (n) => new Intl.NumberFormat('de-DE').format(Math.abs(n));
 
         function parseDate(d) {
@@ -198,36 +262,203 @@
             return dt.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
         }
 
-        function checkLogin() {
-            if (document.getElementById('pin-input').value === APP_PIN) {
-                document.getElementById('login-screen').style.display = 'none';
-                sessionStorage.setItem('loggedIn', 'true');
-                fetchFromGoogle();
-            } else { alert("PIN Incorrecto"); }
+        // ── VALIDACIÓN RUT CHILENO ──
+        function validateRUT(rut) {
+            const clean = rut.replace(/[\.\-\s]/g, '').toUpperCase();
+            if (!/^\d{7,8}[0-9K]$/.test(clean)) return false;
+            const body = clean.slice(0, -1);
+            const dv = clean.slice(-1);
+            let sum = 0, mult = 2;
+            for (let i = body.length - 1; i >= 0; i--) {
+                sum += parseInt(body[i]) * mult;
+                mult = mult === 7 ? 2 : mult + 1;
+            }
+            const r = 11 - (sum % 11);
+            const expected = r === 11 ? '0' : r === 10 ? 'K' : String(r);
+            return dv === expected;
         }
-        if (sessionStorage.getItem('loggedIn') === 'true') { document.getElementById('login-screen').style.display = 'none'; fetchFromGoogle(); }
 
-        async function fetchFromGoogle() {
+        function normalizeRUT(rut) {
+            return rut.replace(/[\.\-\s]/g, '').toUpperCase();
+        }
+
+        function formatRUTInput(e) {
+            let v = e.target.value.replace(/[^0-9kK]/g, '').toUpperCase();
+            if (v.length > 9) v = v.slice(0, 9);
+            if (v.length > 1) {
+                const body = v.slice(0, -1);
+                const dv = v.slice(-1);
+                v = body.replace(/\B(?=(\d{3})+(?!\d))/g, '.') + '-' + dv;
+            }
+            e.target.value = v;
+        }
+
+        // ── TABS LOGIN/REGISTRO ──
+        function switchTab(tab) {
+            document.getElementById('form-login').style.display = tab === 'login' ? 'block' : 'none';
+            document.getElementById('form-register').style.display = tab === 'register' ? 'block' : 'none';
+            document.getElementById('tab-login').classList.toggle('active', tab === 'login');
+            document.getElementById('tab-register').classList.toggle('active', tab === 'register');
+        }
+
+        function showMsg(id, text, type) {
+            const el = document.getElementById(id);
+            el.textContent = text;
+            el.className = `auth-msg ${type}`;
+            el.style.display = 'block';
+        }
+        function hideMsg(id) { document.getElementById(id).style.display = 'none'; }
+
+        // ── BLOQUEO POR INTENTOS ──
+        function startLockout() {
+            clearTimeout(lockoutTimer);
+            lockoutUntil = Date.now() + 30000;
+            const bar = document.getElementById('lockout-bar');
+            const fill = document.getElementById('lockout-fill');
+            bar.style.display = 'block';
+            fill.style.width = '100%';
+            const tick = () => {
+                const rem = lockoutUntil - Date.now();
+                if (rem <= 0) {
+                    bar.style.display = 'none';
+                    fill.style.width = '100%';
+                    loginAttempts = 0;
+                    hideMsg('login-error');
+                    return;
+                }
+                fill.style.width = (rem / 30000 * 100) + '%';
+                showMsg('login-error', `Demasiados intentos fallidos. Espera ${Math.ceil(rem / 1000)} segundos.`, 'error');
+                lockoutTimer = setTimeout(tick, 1000);
+            };
+            tick();
+        }
+
+        // ── LOGIN ──
+        async function doLogin() {
+            if (Date.now() < lockoutUntil) return;
+            const rut = document.getElementById('login-rut').value.trim();
+            const pass = document.getElementById('login-pass').value;
+            if (!rut || !pass) { showMsg('login-error', 'Completa RUT y contraseña.', 'error'); return; }
+            if (!validateRUT(rut)) { showMsg('login-error', 'RUT inválido. Verifica el dígito verificador.', 'error'); return; }
+            hideMsg('login-error');
             document.getElementById('loader').style.display = 'flex';
             try {
-                const response = await fetch(WEB_APP_URL);
-                const d = await response.json();
-                txs = d.txs.map(t => ({...t, date: parseDate(t.date)}));
-                debts = d.debts.map(t => ({...t, date: parseDate(t.date)}));
-                archives = d.archives.map(a => ({...a, data: a.data.map(t => ({...t, date: parseDate(t.date)}))}));
-                catsInc = d.catsInc || []; catsExp = d.catsExp || []; catsSav = d.catsSav || ["Emergencia", "Viajes"];
+                const res = await fetch(`${WEB_APP_URL}?action=login&rut=${encodeURIComponent(normalizeRUT(rut))}&pass=${encodeURIComponent(pass)}`);
+                const d = await res.json();
+                if (d.ok) {
+                    loginAttempts = 0;
+                    currentUser = { rut: normalizeRUT(rut), nombre: d.nombre };
+                    sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+                    document.getElementById('login-screen').style.display = 'none';
+                    fetchFromGoogle();
+                } else {
+                    loginAttempts++;
+                    const left = 3 - loginAttempts;
+                    if (loginAttempts >= 3) {
+                        startLockout();
+                    } else {
+                        showMsg('login-error', `RUT o contraseña incorrectos. ${left} intento${left !== 1 ? 's' : ''} restante${left !== 1 ? 's' : ''}.`, 'error');
+                    }
+                }
+            } catch { showMsg('login-error', 'Error de conexión. Intenta de nuevo.', 'error'); }
+            document.getElementById('loader').style.display = 'none';
+        }
+
+        // ── REGISTRO ──
+        async function doRegister() {
+            const rut = document.getElementById('reg-rut').value.trim();
+            const nombre = document.getElementById('reg-nombre').value.trim();
+            const pass = document.getElementById('reg-pass').value;
+            const pass2 = document.getElementById('reg-pass2').value;
+            hideMsg('reg-error'); hideMsg('reg-success');
+            if (!rut || !nombre || !pass || !pass2) { showMsg('reg-error', 'Completa todos los campos.', 'error'); return; }
+            if (!validateRUT(rut)) { showMsg('reg-error', 'RUT inválido. Verifica el número y dígito verificador.', 'error'); return; }
+            if (pass.length < 6) { showMsg('reg-error', 'La contraseña debe tener al menos 6 caracteres.', 'error'); return; }
+            if (pass !== pass2) { showMsg('reg-error', 'Las contraseñas no coinciden.', 'error'); return; }
+            document.getElementById('loader').style.display = 'flex';
+            try {
+                await fetch(WEB_APP_URL, {
+                    method: 'POST', mode: 'no-cors',
+                    body: JSON.stringify({ action: 'register', rut: normalizeRUT(rut), nombre, pass })
+                });
+                await new Promise(r => setTimeout(r, 1800));
+                const check = await fetch(`${WEB_APP_URL}?action=login&rut=${encodeURIComponent(normalizeRUT(rut))}&pass=${encodeURIComponent(pass)}`);
+                const d = await check.json();
+                if (d.ok) {
+                    showMsg('reg-success', '¡Cuenta creada! Iniciando sesión...', 'success');
+                    setTimeout(() => {
+                        currentUser = { rut: normalizeRUT(rut), nombre: d.nombre };
+                        sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+                        document.getElementById('login-screen').style.display = 'none';
+                        fetchFromGoogle();
+                    }, 1200);
+                } else {
+                    showMsg('reg-error', 'Error al crear la cuenta. El RUT ya puede estar registrado.', 'error');
+                }
+            } catch { showMsg('reg-error', 'Error de conexión. Intenta de nuevo.', 'error'); }
+            document.getElementById('loader').style.display = 'none';
+        }
+
+        // ── LOGOUT ──
+        function doLogout() {
+            if (confirm('¿Cerrar sesión?')) {
+                sessionStorage.removeItem('currentUser');
+                currentUser = null;
+                txs = []; debts = []; archives = []; catsInc = []; catsExp = []; catsSav = [];
+                loginAttempts = 0;
+                document.getElementById('login-pass').value = '';
+                document.getElementById('login-rut').value = '';
+                document.getElementById('login-screen').style.display = 'flex';
+            }
+        }
+
+        // ── AUTO LOGIN ──
+        const savedUser = sessionStorage.getItem('currentUser');
+        if (savedUser) {
+            currentUser = JSON.parse(savedUser);
+            document.getElementById('login-screen').style.display = 'none';
+            fetchFromGoogle();
+        }
+
+        // ── TECLA ENTER ──
+        document.getElementById('login-rut').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('login-pass').focus(); });
+        document.getElementById('login-pass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+        document.getElementById('reg-rut').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('reg-nombre').focus(); });
+        document.getElementById('reg-nombre').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('reg-pass').focus(); });
+        document.getElementById('reg-pass').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('reg-pass2').focus(); });
+        document.getElementById('reg-pass2').addEventListener('keydown', e => { if (e.key === 'Enter') doRegister(); });
+
+        // ── FORMATO RUT AL ESCRIBIR ──
+        document.getElementById('login-rut').addEventListener('input', formatRUTInput);
+        document.getElementById('reg-rut').addEventListener('input', formatRUTInput);
+
+        // ── API ──
+        async function fetchFromGoogle() {
+            if (!currentUser) return;
+            document.getElementById('loader').style.display = 'flex';
+            document.getElementById('header-user').innerText = `Hola, ${currentUser.nombre}`;
+            try {
+                const res = await fetch(`${WEB_APP_URL}?action=data&rut=${encodeURIComponent(currentUser.rut)}`);
+                const d = await res.json();
+                txs      = (d.txs      || []).map(t => ({...t, date: parseDate(t.date)}));
+                debts    = (d.debts    || []).map(t => ({...t, date: parseDate(t.date)}));
+                archives = (d.archives || []).map(a => ({...a, data: a.data.map(t => ({...t, date: parseDate(t.date)}))}));
+                catsInc = d.catsInc || []; catsExp = d.catsExp || []; catsSav = d.catsSav || ['Emergencia', 'Viajes'];
                 updateUI();
             } catch (e) { console.error(e); }
             document.getElementById('loader').style.display = 'none';
         }
 
         async function sync() {
+            if (!currentUser) return;
             document.getElementById('loader').style.display = 'flex';
-            const payload = { data: { txs, debts, archives, catsInc, catsExp, catsSav } };
-            try { await fetch(WEB_APP_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) }); setTimeout(updateUI, 800); } catch (e) { alert("Error"); }
+            const payload = { action: 'save', rut: currentUser.rut, data: { txs, debts, archives, catsInc, catsExp, catsSav } };
+            try { await fetch(WEB_APP_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) }); setTimeout(updateUI, 800); }
+            catch { alert('Error al sincronizar'); }
             document.getElementById('loader').style.display = 'none';
         }
 
+        // ── UI PRINCIPAL ──
         function updateUI() {
             const list = document.getElementById('transaction-list');
             const banner = document.getElementById('category-total-banner');
@@ -235,61 +466,54 @@
             const data = viewingArchive || txs;
             list.innerHTML = '';
 
-            if (viewingArchive) {
-                archBanner.style.display = 'flex';
-                document.getElementById('archive-banner-period').innerText = viewingArchivePeriod || '';
-            } else {
-                archBanner.style.display = 'none';
-            }
-            
+            archBanner.style.display = viewingArchive ? 'flex' : 'none';
+            if (viewingArchive) document.getElementById('archive-banner-period').innerText = viewingArchivePeriod || '';
+
             document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('active'));
-            if(filterType !== 'all') document.getElementById('card-'+filterType).classList.add('active');
+            if (filterType !== 'all') document.getElementById('card-' + filterType).classList.add('active');
 
             const chips = document.getElementById('filter-container');
             chips.innerHTML = '';
-            if(['plus','minus','save'].includes(filterType)){
+            if (['plus','minus','save'].includes(filterType)) {
                 const src = filterType === 'plus' ? catsInc : (filterType === 'minus' ? catsExp : catsSav);
                 chips.innerHTML = `<div class="chip ${filterCat==='all'?'active':''}" onclick="setCatFilter('all')">Todo</div>`;
                 src.forEach(c => chips.innerHTML += `<div class="chip ${filterCat===c?'active':''}" onclick="setCatFilter('${c}')">${c}</div>`);
             }
 
-            // Filtrado
             let filtered = [];
             if (filterType === 'debt') {
-                filtered = debts.map(d=>({...d,isD:true}));
+                filtered = debts.map(d => ({...d, isD: true}));
             } else if (filterType === 'plus' && filterCat !== 'all') {
-                // Ver ingresos + lo que salió de ahí (gastos y ahorros)
-                filtered = data.filter(t => (t.amount > 0 && t.cat === filterCat) || (t.source === filterCat));
+                filtered = data.filter(t => (t.amount > 0 && t.cat === filterCat) || t.source === filterCat);
             } else {
                 filtered = data.filter(t => {
                     const mType = filterType==='all' || (filterType==='plus'?t.amount>0:(filterType==='save'?t.isSaving:t.amount<0 && !t.isSaving));
-                    const mCat = filterCat==='all' || t.cat === filterCat || t.source === filterCat;
+                    const mCat  = filterCat==='all' || t.cat === filterCat || t.source === filterCat;
                     return mType && mCat;
                 });
             }
 
-            // Banner Totales
             if (filterCat !== 'all') {
                 banner.style.display = 'flex';
                 document.getElementById('cat-label').innerText = filterCat;
-                const earned = data.filter(t => t.amount > 0 && t.cat === filterCat).reduce((a,b)=>a+b.amount,0);
-                const spent = Math.abs(data.filter(t => t.amount < 0 && !t.isSaving && t.source === filterCat).reduce((a,b)=>a+b.amount,0));
-                const saved = Math.abs(data.filter(t => t.isSaving && t.source === filterCat).reduce((a,b)=>a+b.amount,0));
-
+                const earned = data.filter(t => t.amount > 0 && t.cat === filterCat).reduce((a,b) => a+b.amount, 0);
+                const spent  = Math.abs(data.filter(t => t.amount < 0 && !t.isSaving && t.source === filterCat).reduce((a,b) => a+b.amount, 0));
+                const saved  = Math.abs(data.filter(t => t.isSaving && t.source === filterCat).reduce((a,b) => a+b.amount, 0));
                 if (filterType === 'plus') {
                     document.getElementById('cat-earned').innerText = `$${fmt(earned)}`;
-                    document.getElementById('cat-spent').innerText = `-$${fmt(spent)}`;
+                    document.getElementById('cat-spent').innerText  = `-$${fmt(spent)}`;
                     document.getElementById('cat-saved-from').innerText = `-$${fmt(saved)}`;
                     const rem = earned - spent - saved;
-                    document.getElementById('cat-remaining').innerText = `$${fmt(rem)}`;
-                    document.getElementById('cat-remaining').className = rem >= 0 ? 'plus-txt' : 'minus-txt';
+                    document.getElementById('cat-remaining').innerText   = `$${fmt(rem)}`;
+                    document.getElementById('cat-remaining').className   = rem >= 0 ? 'plus-txt' : 'minus-txt';
+                    banner.querySelectorAll('.banner-row').forEach(r => r.style.display='flex');
                 } else if (filterType === 'save') {
-                    const totalInHucha = data.filter(t => t.isSaving && t.cat === filterCat).reduce((a,b)=>a+Math.abs(b.amount),0);
+                    const totalInHucha = data.filter(t => t.isSaving && t.cat === filterCat).reduce((a,b) => a+Math.abs(b.amount), 0);
                     document.getElementById('cat-remaining').innerText = `$${fmt(totalInHucha)}`;
                     document.getElementById('cat-remaining').className = 'save-txt';
-                    banner.querySelectorAll('.banner-row:not(:first-child)').forEach(r=>r.style.display='none');
+                    banner.querySelectorAll('.banner-row:not(:first-child)').forEach(r => r.style.display='none');
                 } else {
-                    banner.querySelectorAll('.banner-row').forEach(r=>r.style.display='none');
+                    banner.querySelectorAll('.banner-row').forEach(r => r.style.display='none');
                     banner.querySelector('.banner-row').style.display='flex';
                 }
             } else { banner.style.display = 'none'; }
@@ -301,47 +525,42 @@
                     <b>${t.text}</b><small>${t.date}</small><br>
                     <span class="tag ${t.isSaving?'save-tag':''}">${t.cat || ''}</span>
                     ${t.source ? `<span class="tag source-tag">← ${t.source}</span>` : ''}
-                </div><div style="display:flex; align-items:center; gap:8px;">
-                    ${t.isD && !viewingArchive ? `<button onclick="startPayDebt(${t.id})" style="background:var(--i); color:white; border:none; border-radius:8px; font-weight:800; font-size:0.65rem; padding:6px 10px">PAGAR</button>`:''}
+                </div><div style="display:flex;align-items:center;gap:8px;">
+                    ${t.isD && !viewingArchive ? `<button onclick="startPayDebt(${t.id})" style="background:var(--i);color:white;border:none;border-radius:8px;font-weight:800;font-size:0.65rem;padding:6px 10px;cursor:pointer;">PAGAR</button>`:''}
                     <span class="amount ${t.isD?'debt-txt':(t.isSaving?'save-txt':(t.amount>0?'plus-txt':'minus-txt'))}">$${fmt(t.amount)}</span>
-                    ${!viewingArchive ? `<i class="fa-solid fa-pen-to-square" style="color:#94a3b8; font-size:1.1rem; cursor:pointer;" onclick="${t.isD?'editDb':'editTx'}(${t.id})"></i>`:''}
-                    ${!viewingArchive ? `<i class="fa-solid fa-circle-xmark" style="color:#e2e8f0; font-size:1.3rem;" onclick="${t.isD?'delDb':'delTx'}(${t.id})"></i>`:''}
+                    ${!viewingArchive ? `<i class="fa-solid fa-pen-to-square" style="color:#94a3b8;font-size:1.1rem;cursor:pointer;" onclick="${t.isD?'editDb':'editTx'}(${t.id})"></i>`:''}
+                    ${!viewingArchive ? `<i class="fa-solid fa-circle-xmark" style="color:#e2e8f0;font-size:1.3rem;cursor:pointer;" onclick="${t.isD?'delDb':'delTx'}(${t.id})"></i>`:''}
                 </div>`;
                 list.appendChild(div);
             });
 
-            const ti = data.filter(t=>t.amount>0).reduce((a,b)=>a+b.amount,0);
-            const te = Math.abs(data.filter(t=>t.amount<0 && !t.isSaving).reduce((a,b)=>a+b.amount,0));
-            const ts = data.filter(t=>t.isSaving).reduce((a,b)=>a+Math.abs(b.amount),0);
+            const ti = data.filter(t => t.amount > 0).reduce((a,b) => a+b.amount, 0);
+            const te = Math.abs(data.filter(t => t.amount < 0 && !t.isSaving).reduce((a,b) => a+b.amount, 0));
+            const ts = data.filter(t => t.isSaving).reduce((a,b) => a+Math.abs(b.amount), 0);
             document.getElementById('balance-display').innerText = `$${fmt(ti-te-ts)}`;
             document.getElementById('total-inc').innerText = `+$${fmt(ti)}`;
             document.getElementById('total-exp').innerText = `-$${fmt(te)}`;
-            document.getElementById('total-deb').innerText = `$${fmt(debts.reduce((a,b)=>a+b.amount,0))}`;
+            document.getElementById('total-deb').innerText = `$${fmt(debts.reduce((a,b) => a+b.amount, 0))}`;
             document.getElementById('total-sav').innerText = `$${fmt(ts)}`;
             renderCatAdmin(); renderArchives();
         }
 
         function refreshFormCats() {
             const t = document.getElementById('tx-type').value;
+            document.getElementById('cat-group').style.display = t==='debt' ? 'none' : 'block';
+            document.getElementById('source-group').style.display = (t==='minus'||t==='save') ? 'block' : 'none';
             const catSel = document.getElementById('tx-category');
             const srcSel = document.getElementById('tx-source');
-            const gCat = document.getElementById('cat-group');
-            const gSrc = document.getElementById('source-group');
-            const lCat = document.getElementById('cat-label-form');
-
-            gCat.style.display = t==='debt'?'none':'block';
-            gSrc.style.display = (t==='minus'||t==='save')?'block':'none';
-
-            if(t==='plus'){ lCat.innerText="Categoría Ingreso:"; catSel.innerHTML=catsInc.map(c=>`<option value="${c}">${c}</option>`).join(''); }
-            if(t==='minus'){ lCat.innerText="Categoría Gasto:"; catSel.innerHTML=catsExp.map(c=>`<option value="${c}">${c}</option>`).join(''); srcSel.innerHTML=catsInc.map(c=>`<option value="${c}">${c}</option>`).join(''); }
-            if(t==='save'){ lCat.innerText="Hucha de Ahorro:"; catSel.innerHTML=catsSav.map(c=>`<option value="${c}">${c}</option>`).join(''); srcSel.innerHTML=catsInc.map(c=>`<option value="${c}">${c}</option>`).join(''); }
+            const lCat   = document.getElementById('cat-label-form');
+            if (t==='plus')  { lCat.innerText="Categoría Ingreso:"; catSel.innerHTML=catsInc.map(c=>`<option>${c}</option>`).join(''); }
+            if (t==='minus') { lCat.innerText="Categoría Gasto:";   catSel.innerHTML=catsExp.map(c=>`<option>${c}</option>`).join(''); srcSel.innerHTML=catsInc.map(c=>`<option>${c}</option>`).join(''); }
+            if (t==='save')  { lCat.innerText="Hucha de Ahorro:";   catSel.innerHTML=catsSav.map(c=>`<option>${c}</option>`).join(''); srcSel.innerHTML=catsInc.map(c=>`<option>${c}</option>`).join(''); }
         }
 
         document.getElementById('tx-form').addEventListener('submit', e => {
             e.preventDefault();
-            const val = parseInt(document.getElementById('tx-amount').value.replace(/\./g,''));
+            const val  = parseInt(document.getElementById('tx-amount').value.replace(/\./g,''));
             const type = document.getElementById('tx-type').value;
-
             if (editingTxId !== null) {
                 if (editingIsDebt) {
                     const d = debts.find(x => x.id === editingTxId);
@@ -350,19 +569,19 @@
                     const t = txs.find(x => x.id === editingTxId);
                     if (t) {
                         t.text = document.getElementById('tx-text').value;
-                        t.cat = type !== 'debt' ? document.getElementById('tx-category').value : '';
-                        if (type === 'save') { t.amount = -val; t.isSaving = true; t.source = document.getElementById('tx-source').value; }
-                        else if (type === 'minus') { t.amount = -val; t.isSaving = false; t.source = document.getElementById('tx-source').value; }
-                        else { t.amount = val; t.isSaving = false; t.source = ''; }
+                        t.cat  = type !== 'debt' ? document.getElementById('tx-category').value : '';
+                        if (type==='save')  { t.amount=-val; t.isSaving=true;  t.source=document.getElementById('tx-source').value; }
+                        else if (type==='minus') { t.amount=-val; t.isSaving=false; t.source=document.getElementById('tx-source').value; }
+                        else { t.amount=val; t.isSaving=false; t.source=''; }
                     }
                 }
             } else {
                 const item = { id:Date.now(), text:document.getElementById('tx-text').value, amount:val, date:new Date().toLocaleDateString('es-ES') };
-                if(type==='debt') debts.push(item);
+                if (type==='debt') debts.push(item);
                 else {
                     item.cat = document.getElementById('tx-category').value;
-                    if(type==='save'){ item.amount = -val; item.isSaving = true; item.source = document.getElementById('tx-source').value; }
-                    if(type==='minus'){ item.amount = -val; item.source = document.getElementById('tx-source').value; }
+                    if (type==='save')  { item.amount=-val; item.isSaving=true;  item.source=document.getElementById('tx-source').value; }
+                    if (type==='minus') { item.amount=-val; item.source=document.getElementById('tx-source').value; }
                     txs.push(item);
                 }
             }
@@ -372,92 +591,102 @@
         function startPayDebt(id) {
             debtToPay = debts.find(x => x.id === id);
             document.getElementById('pay-debt-info').innerText = `Pagar: ${debtToPay.text} ($${fmt(debtToPay.amount)})`;
-            document.getElementById('pay-debt-source').innerHTML = catsInc.map(c => `<option value="${c}">${c}</option>`).join('');
+            document.getElementById('pay-debt-source').innerHTML = catsInc.map(c => `<option>${c}</option>`).join('');
             openModal('modal-pay-debt');
         }
-
         function executePayDebt() {
-            const src = document.getElementById('pay-debt-source').value;
-            txs.push({ id:Date.now(), text:"PAGO DEUDA: "+debtToPay.text, amount:-debtToPay.amount, date:new Date().toLocaleDateString('es-ES'), cat:"Deuda", source:src });
+            txs.push({ id:Date.now(), text:"PAGO DEUDA: "+debtToPay.text, amount:-debtToPay.amount, date:new Date().toLocaleDateString('es-ES'), cat:"Deuda", source:document.getElementById('pay-debt-source').value });
             debts = debts.filter(x => x.id !== debtToPay.id);
             closeModal('modal-pay-debt'); sync();
         }
-
         function addCat() {
             const n = document.getElementById('new-cat-name').value.trim();
             const t = document.getElementById('new-cat-type').value;
-            if(n) { if(t==='inc')catsInc.push(n); else if(t==='exp')catsExp.push(n); else catsSav.push(n); document.getElementById('new-cat-name').value=''; updateUI(); sync(); }
+            if (n) { if(t==='inc') catsInc.push(n); else if(t==='exp') catsExp.push(n); else catsSav.push(n); document.getElementById('new-cat-name').value=''; updateUI(); sync(); }
         }
         function moveCat(type, idx, dir) {
-            const arr = type==='inc' ? catsInc : (type==='exp'?catsExp:catsSav);
-            if(idx+dir >= 0 && idx+dir < arr.length){ [arr[idx], arr[idx+dir]] = [arr[idx+dir], arr[idx]]; updateUI(); sync(); }
+            const arr = type==='inc' ? catsInc : (type==='exp' ? catsExp : catsSav);
+            if (idx+dir >= 0 && idx+dir < arr.length) { [arr[idx],arr[idx+dir]]=[arr[idx+dir],arr[idx]]; updateUI(); sync(); }
         }
         function renderCatAdmin() {
-            const draw = (arr, t) => arr.map((c,i)=>`<div class="cat-item"><span>${c}</span><div>
+            const draw = (arr, t) => arr.map((c,i) => `<div class="cat-item"><span>${c}</span><div>
                 <button onclick="moveCat('${t}',${i},-1)">↑</button><button onclick="moveCat('${t}',${i},1)">↓</button>
-                <button onclick="${t==='inc'?'catsInc':(t==='exp'?'catsExp':'catsSav')}.splice(${i},1);sync()" style="color:var(--e); border:none; background:none; font-weight:bold; margin-left:5px">×</button></div></div>`).join('');
-            document.getElementById('cat-admin-list').innerHTML = `<p style="color:var(--i); font-size:0.7rem; font-weight:bold;">INGRESOS</p>${draw(catsInc,'inc')}<p style="color:var(--e); font-size:0.7rem; font-weight:bold;">GASTOS</p>${draw(catsExp,'exp')}<p style="color:var(--s); font-size:0.7rem; font-weight:bold;">AHORROS</p>${draw(catsSav,'sav')}`;
+                <button onclick="${t==='inc'?'catsInc':(t==='exp'?'catsExp':'catsSav')}.splice(${i},1);updateUI();sync()" style="color:var(--e);border:none;background:none;font-weight:bold;margin-left:5px;">×</button>
+            </div></div>`).join('');
+            document.getElementById('cat-admin-list').innerHTML =
+                `<p style="color:var(--i);font-size:0.7rem;font-weight:bold;">INGRESOS</p>${draw(catsInc,'inc')}` +
+                `<p style="color:var(--e);font-size:0.7rem;font-weight:bold;">GASTOS</p>${draw(catsExp,'exp')}` +
+                `<p style="color:var(--s);font-size:0.7rem;font-weight:bold;">AHORROS</p>${draw(catsSav,'sav')}`;
         }
 
         function setCatFilter(c) { filterCat = c; updateUI(); }
-        function setFilter(f) { filterType = (filterType===f)?'all':f; filterCat='all'; updateUI(); }
+        function setFilter(f)    { filterType = (filterType===f)?'all':f; filterCat='all'; updateUI(); }
+
         function openModal(id) {
             document.getElementById(id).style.display='flex';
-            if(id==='modal-add') {
-                editingTxId = null; editingIsDebt = false;
-                document.getElementById('tx-text').value = '';
-                document.getElementById('tx-amount').value = '';
-                document.getElementById('tx-type').value = 'plus';
-                document.getElementById('modal-add-title').innerText = 'Nuevo Registro';
-                document.getElementById('modal-add-btn').innerText = 'Guardar Movimiento';
+            if (id==='modal-add') {
+                editingTxId=null; editingIsDebt=false;
+                document.getElementById('tx-text').value='';
+                document.getElementById('tx-amount').value='';
+                document.getElementById('tx-type').value='plus';
+                document.getElementById('modal-add-title').innerText='Nuevo Registro';
+                document.getElementById('modal-add-btn').innerText='Guardar Movimiento';
                 refreshFormCats();
             }
         }
         function closeModal(id) {
             document.getElementById(id).style.display='none';
-            if(id==='modal-add') { editingTxId = null; editingIsDebt = false; }
+            if (id==='modal-add') { editingTxId=null; editingIsDebt=false; }
         }
         function editTx(id) {
-            const t = txs.find(x => x.id === id);
-            if (!t) return;
-            editingTxId = id; editingIsDebt = false;
-            document.getElementById('tx-text').value = t.text;
-            document.getElementById('tx-amount').value = fmt(Math.abs(t.amount));
-            const type = t.isSaving ? 'save' : (t.amount < 0 ? 'minus' : 'plus');
-            document.getElementById('tx-type').value = type;
+            const t = txs.find(x => x.id === id); if (!t) return;
+            editingTxId=id; editingIsDebt=false;
+            document.getElementById('tx-text').value=t.text;
+            document.getElementById('tx-amount').value=fmt(Math.abs(t.amount));
+            document.getElementById('tx-type').value = t.isSaving?'save':(t.amount<0?'minus':'plus');
             refreshFormCats();
-            if (t.cat) document.getElementById('tx-category').value = t.cat;
-            if (t.source) document.getElementById('tx-source').value = t.source;
-            document.getElementById('modal-add-title').innerText = 'Editar Registro';
-            document.getElementById('modal-add-btn').innerText = 'Guardar Cambios';
-            document.getElementById('modal-add').style.display = 'flex';
+            if (t.cat)    document.getElementById('tx-category').value=t.cat;
+            if (t.source) document.getElementById('tx-source').value=t.source;
+            document.getElementById('modal-add-title').innerText='Editar Registro';
+            document.getElementById('modal-add-btn').innerText='Guardar Cambios';
+            document.getElementById('modal-add').style.display='flex';
         }
         function editDb(id) {
-            const d = debts.find(x => x.id === id);
-            if (!d) return;
-            editingTxId = id; editingIsDebt = true;
-            document.getElementById('tx-text').value = d.text;
-            document.getElementById('tx-amount').value = fmt(d.amount);
-            document.getElementById('tx-type').value = 'debt';
+            const d = debts.find(x => x.id === id); if (!d) return;
+            editingTxId=id; editingIsDebt=true;
+            document.getElementById('tx-text').value=d.text;
+            document.getElementById('tx-amount').value=fmt(d.amount);
+            document.getElementById('tx-type').value='debt';
             refreshFormCats();
-            document.getElementById('modal-add-title').innerText = 'Editar Deuda';
-            document.getElementById('modal-add-btn').innerText = 'Guardar Cambios';
-            document.getElementById('modal-add').style.display = 'flex';
+            document.getElementById('modal-add-title').innerText='Editar Deuda';
+            document.getElementById('modal-add-btn').innerText='Guardar Cambios';
+            document.getElementById('modal-add').style.display='flex';
         }
-        function delTx(id) { if(confirm("¿Eliminar?")){ txs=txs.filter(t=>t.id!==id); sync(); }}
-        function delDb(id) { if(confirm("¿Eliminar?")){ debts=debts.filter(d=>d.id!==id); sync(); }}
-        function renderArchives() { document.getElementById('archives-list').innerHTML = archives.map(a => `<div class="item-card" onclick="loadArch(${a.id})"><b>${a.period}</b></div>`).join(''); }
+        function delTx(id) { if(confirm("¿Eliminar movimiento?")) { txs=txs.filter(t=>t.id!==id); sync(); } }
+        function delDb(id) { if(confirm("¿Eliminar deuda?"))      { debts=debts.filter(d=>d.id!==id); sync(); } }
+
+        function renderArchives() {
+            document.getElementById('archives-list').innerHTML = archives.length
+                ? archives.map(a => `<div class="item-card" onclick="loadArch(${a.id})" style="cursor:pointer;"><b>${a.period}</b></div>`).join('')
+                : '<p style="color:#94a3b8;text-align:center;">Sin archivos aún</p>';
+        }
         function loadArch(id) {
-            const arch = archives.find(x=>x.id===id);
-            viewingArchive = arch.data; viewingArchivePeriod = arch.period;
-            document.getElementById('loader').style.display='none';
+            const arch = archives.find(x => x.id === id);
+            viewingArchive=arch.data; viewingArchivePeriod=arch.period;
             updateUI(); closeModal('modal-history');
         }
-        function exitArchiveMode() { viewingArchive = null; viewingArchivePeriod = null; updateUI(); }
-        function processArchive() { if(confirm("¿Archivar?")){ archives.push({id:Date.now(), period:txs[0].date+" al "+txs[txs.length-1].date, data:[...txs]}); txs=[]; sync(); closeModal('modal-archive'); } }
-        document.getElementById('tx-amount').addEventListener('input',e=>{ let v = e.target.value.replace(/\D/g,""); e.target.value = v?fmt(v):""; });
-
-        fetchFromGoogle();
+        function exitArchiveMode() { viewingArchive=null; viewingArchivePeriod=null; updateUI(); }
+        function processArchive() {
+            if (!txs.length) { alert('No hay movimientos para archivar.'); return; }
+            if (confirm("¿Archivar el mes actual y comenzar período nuevo?")) {
+                archives.push({id:Date.now(), period:txs[0].date+" al "+txs[txs.length-1].date, data:[...txs]});
+                txs=[]; sync(); closeModal('modal-archive');
+            }
+        }
+        document.getElementById('tx-amount').addEventListener('input', e => {
+            let v = e.target.value.replace(/\D/g,"");
+            e.target.value = v ? fmt(v) : "";
+        });
     </script>
 </body>
 </html>
