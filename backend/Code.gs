@@ -61,6 +61,33 @@ function doGet(e) {
     return user ? json({ ok: true, nombre: user[1] }) : json({ ok: false });
   }
 
+  // ── Cambiar nombre (usuario autenticado) ──
+  if (action === 'updateName') {
+    const rut    = (e.parameter.rut    || '').toUpperCase();
+    const nombre = (e.parameter.nombre || '').trim();
+    if (!nombre) return json({ ok: false, error: 'Nombre requerido' });
+    const sh     = ss.getSheetByName('Usuarios');
+    const data   = sh.getDataRange().getValues();
+    const rowIdx = data.slice(1).findIndex(r => String(r[0]).toUpperCase() === rut);
+    if (rowIdx === -1) return json({ ok: false, error: 'RUT no encontrado' });
+    sh.getRange(rowIdx + 2, 2).setValue(nombre);
+    return json({ ok: true });
+  }
+
+  // ── Cambiar PIN (verificando PIN actual) ──
+  if (action === 'changePass') {
+    const rut     = (e.parameter.rut     || '').toUpperCase();
+    const oldPass = (e.parameter.oldPass || '');
+    const newPass = (e.parameter.newPass || '');
+    if (!/^\d{4}$/.test(newPass)) return json({ ok: false, error: 'PIN debe ser 4 dígitos' });
+    const sh     = ss.getSheetByName('Usuarios');
+    const data   = sh.getDataRange().getValues();
+    const rowIdx = data.slice(1).findIndex(r => String(r[0]).toUpperCase() === rut && String(r[2]) === oldPass);
+    if (rowIdx === -1) return json({ ok: false, error: 'PIN actual incorrecto' });
+    sh.getRange(rowIdx + 2, 3).setValue(newPass);
+    return json({ ok: true });
+  }
+
   // ── Restablecer PIN ──
   if (action === 'resetPass') {
     const rut     = (e.parameter.rut     || '').toUpperCase();

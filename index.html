@@ -127,6 +127,20 @@
         .save-tag { background: #cffafe; color: var(--s); border: 1px solid #a5f3fc; }
         .plus-txt { color: var(--i); } .minus-txt { color: var(--e); } .debt-txt { color: var(--d); } .save-txt { color: var(--s); }
 
+        /* ── CONFIGURACIÓN ── */
+        .settings-profile { display: flex; align-items: center; gap: 14px; background: #f8fafc; border-radius: 16px; padding: 14px; margin-bottom: 22px; }
+        .settings-avatar { width: 48px; height: 48px; border-radius: 50%; background: var(--p); color: white; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0; }
+        .settings-section { margin-bottom: 22px; }
+        .settings-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: #94a3b8; font-weight: 700; margin-bottom: 10px; }
+        .help-item { border-bottom: 1px solid #f1f5f9; }
+        .help-item summary { padding: 12px 0; font-size: 0.88rem; font-weight: 600; cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; color: #374151; }
+        .help-item summary::-webkit-details-marker { display: none; }
+        .help-item summary::after { content: '+'; font-size: 1.1rem; color: var(--p); font-weight: 700; flex-shrink: 0; margin-left: 8px; }
+        .help-item[open] summary::after { content: '−'; }
+        .help-item p { font-size: 0.84rem; color: #64748b; line-height: 1.55; padding: 0 0 12px; margin: 0; }
+        .help-item p b { color: #374151; }
+        .info-btn { background: none; border: none; color: #94a3b8; font-size: 0.85rem; cursor: pointer; padding: 0 0 0 4px; vertical-align: middle; line-height: 1; }
+
         /* ── BOTTOM BAR ── */
         .bottom-bar { position: fixed; bottom: 0; left: 0; right: 0; background: white; display: flex; border-top: 1.5px solid #e2e8f0; z-index: 50; padding-bottom: env(safe-area-inset-bottom, 0px); }
         .bottom-bar button { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; background: none; border: none; padding: 12px 10px 14px; font-size: 0.65rem; font-weight: bold; color: #94a3b8; cursor: pointer; }
@@ -279,6 +293,10 @@
             <i class="fa-solid fa-circle-plus"></i>
             <span>Nuevo</span>
         </button>
+        <button onclick="openSettings()">
+            <i class="fa-solid fa-gear"></i>
+            <span>Configuración</span>
+        </button>
     </div>
 
     <!-- MODAL NUEVO/EDITAR MOVIMIENTO -->
@@ -300,7 +318,7 @@
                     <select id="tx-category"></select>
                 </div>
                 <div id="source-group" style="display:none">
-                    <label style="font-size:0.7rem; color:var(--p)">¿De qué ingreso sale el dinero?</label>
+                    <label style="font-size:0.7rem; color:var(--p)">¿De qué ingreso sale el dinero? <button type="button" class="info-btn" onclick="showToast('Indica de qué fuente de ingreso proviene el dinero (ej: Sueldo). Así puedes ver cuánto te queda disponible de cada ingreso.', '')"><i class="fa-solid fa-circle-info"></i></button></label>
                     <select id="tx-source"></select>
                 </div>
                 <button type="submit" id="modal-add-btn" class="btn-full">Guardar Movimiento</button>
@@ -348,6 +366,67 @@
         <div class="modal-content" onclick="event.stopPropagation()">
             <h3>Historial</h3>
             <div id="archives-list"></div>
+        </div>
+    </div>
+
+    <!-- MODAL CONFIGURACIÓN -->
+    <div class="modal" id="modal-settings" onclick="closeModal('modal-settings')">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h3><i class="fa-solid fa-gear" style="margin-right:8px;"></i>Configuración</h3>
+
+            <div class="settings-profile">
+                <div class="settings-avatar"><i class="fa-solid fa-circle-user"></i></div>
+                <div>
+                    <b id="cfg-nombre-display" style="font-size:1rem;"></b>
+                    <div id="cfg-rut-display" style="font-size:0.78rem; color:#94a3b8; margin-top:2px;"></div>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <div class="settings-label">Cambiar nombre</div>
+                <input type="text" id="cfg-new-name" placeholder="Nuevo nombre" autocomplete="name">
+                <div class="auth-msg" id="cfg-name-msg" style="display:none; margin-bottom:8px;"></div>
+                <button id="btn-update-name" class="btn-full" onclick="doUpdateName()">Guardar nombre</button>
+            </div>
+
+            <div class="settings-section">
+                <div class="settings-label">Cambiar PIN</div>
+                <input type="tel" id="cfg-old-pin" placeholder="PIN actual (4 dígitos)" inputmode="numeric" maxlength="4" pattern="[0-9]*" autocomplete="off">
+                <input type="tel" id="cfg-new-pin" placeholder="Nuevo PIN (4 dígitos)" inputmode="numeric" maxlength="4" pattern="[0-9]*" autocomplete="off">
+                <input type="tel" id="cfg-new-pin2" placeholder="Confirmar nuevo PIN" inputmode="numeric" maxlength="4" pattern="[0-9]*" autocomplete="off">
+                <div class="auth-msg" id="cfg-pin-msg" style="display:none; margin-bottom:8px;"></div>
+                <button id="btn-change-pin" class="btn-full" onclick="doChangePass()" style="background:#7c3aed;">Cambiar PIN</button>
+            </div>
+
+            <div class="settings-section">
+                <div class="settings-label"><i class="fa-solid fa-circle-question" style="margin-right:5px;color:var(--p);"></i>Ayuda</div>
+                <details class="help-item">
+                    <summary>¿Cómo agrego un movimiento?</summary>
+                    <p>Toca <b>Nuevo</b> en la barra inferior. Completa el concepto, monto y fecha. Elige el tipo: <b>Ingreso (+)</b>, <b>Gasto (-)</b>, <b>Ahorro</b> o <b>Deuda</b>. Luego toca Guardar.</p>
+                </details>
+                <details class="help-item">
+                    <summary>¿Qué es "¿De qué ingreso sale?"</summary>
+                    <p>Al registrar un gasto o ahorro, puedes indicar de qué fuente de ingreso sale el dinero (ej: <b>Sueldo</b>, <b>Propina</b>). Así puedes ver cuánto te queda disponible de cada fuente de ingreso.</p>
+                </details>
+                <details class="help-item">
+                    <summary>¿Qué son las huchas de ahorro?</summary>
+                    <p>Las huchas son destinos específicos para tu ahorro, como <b>Emergencia</b> o <b>Viajes</b>. El monto se descuenta de tu disponible total pero queda reservado para ese fin.</p>
+                </details>
+                <details class="help-item">
+                    <summary>¿Cómo funciona el archivo?</summary>
+                    <p>El ícono 📦 en el header guarda una "foto" del período actual. Puedes consultar períodos anteriores desde el ícono 🕐 de historial. Ideal para cerrar cada mes.</p>
+                </details>
+                <details class="help-item">
+                    <summary>¿Para qué sirven las categorías?</summary>
+                    <p>Las categorías organizan tus movimientos. Toca una tarjeta de resumen (Ingresos, Gastos, etc.) para filtrar, luego elige una categoría para ver su total y detalle.</p>
+                </details>
+                <details class="help-item">
+                    <summary>¿Es segura mi información?</summary>
+                    <p>Tus datos se guardan en tu propia planilla de Google Sheets. Solo tú puedes acceder con tu RUT y PIN de 4 dígitos. Nadie más ve tus datos.</p>
+                </details>
+            </div>
+
+            <button class="btn-full" style="background:#94a3b8;" onclick="closeModal('modal-settings')">Cerrar</button>
         </div>
     </div>
 
@@ -993,6 +1072,63 @@
 
         function setCatFilter(c) { filterCat = c; updateUI(); }
         function setFilter(f)    { filterType = (filterType===f)?'all':f; filterCat='all'; updateUI(); }
+
+        // ── CONFIGURACIÓN ──
+        function openSettings() {
+            document.getElementById('cfg-nombre-display').innerText = currentUser.nombre;
+            document.getElementById('cfg-rut-display').innerText   = formatRUTDisplay(currentUser.rut);
+            document.getElementById('cfg-new-name').value  = currentUser.nombre;
+            document.getElementById('cfg-old-pin').value   = '';
+            document.getElementById('cfg-new-pin').value   = '';
+            document.getElementById('cfg-new-pin2').value  = '';
+            const nm = document.getElementById('cfg-name-msg');
+            const pm = document.getElementById('cfg-pin-msg');
+            nm.style.display = 'none'; pm.style.display = 'none';
+            document.getElementById('modal-settings').style.display = 'flex';
+        }
+
+        async function doUpdateName() {
+            const nombre = document.getElementById('cfg-new-name').value.trim();
+            const msgEl  = document.getElementById('cfg-name-msg');
+            if (!nombre) { showMsg('cfg-name-msg','Ingresa un nombre.','error'); return; }
+            setBtnLoading('btn-update-name', true);
+            try {
+                const res = await fetch(`${WEB_APP_URL}?action=updateName&rut=${encodeURIComponent(currentUser.rut)}&nombre=${encodeURIComponent(nombre)}`);
+                const d   = await res.json();
+                if (d.ok) {
+                    currentUser.nombre = nombre;
+                    sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+                    const rem = localStorage.getItem('rememberedUser');
+                    if (rem) localStorage.setItem('rememberedUser', JSON.stringify({...JSON.parse(rem), nombre}));
+                    document.getElementById('header-user').innerText = `Hola, ${nombre}`;
+                    document.getElementById('cfg-nombre-display').innerText = nombre;
+                    showMsg('cfg-name-msg','✓ Nombre actualizado.','success');
+                } else { showMsg('cfg-name-msg', d.error || 'Error al actualizar.','error'); }
+            } catch { showMsg('cfg-name-msg','Error de conexión.','error'); }
+            setBtnLoading('btn-update-name', false);
+        }
+
+        async function doChangePass() {
+            const oldPin  = document.getElementById('cfg-old-pin').value;
+            const newPin  = document.getElementById('cfg-new-pin').value;
+            const newPin2 = document.getElementById('cfg-new-pin2').value;
+            hideMsg('cfg-pin-msg');
+            if (!/^\d{4}$/.test(oldPin))  { showMsg('cfg-pin-msg','PIN actual debe ser 4 dígitos.','error'); return; }
+            if (!/^\d{4}$/.test(newPin))  { showMsg('cfg-pin-msg','Nuevo PIN debe ser 4 dígitos.','error'); return; }
+            if (newPin !== newPin2)        { showMsg('cfg-pin-msg','Los PINs nuevos no coinciden.','error'); return; }
+            setBtnLoading('btn-change-pin', true);
+            try {
+                const res = await fetch(`${WEB_APP_URL}?action=changePass&rut=${encodeURIComponent(currentUser.rut)}&oldPass=${encodeURIComponent(oldPin)}&newPass=${encodeURIComponent(newPin)}`);
+                const d   = await res.json();
+                if (d.ok) {
+                    document.getElementById('cfg-old-pin').value  = '';
+                    document.getElementById('cfg-new-pin').value  = '';
+                    document.getElementById('cfg-new-pin2').value = '';
+                    showMsg('cfg-pin-msg','✓ PIN cambiado exitosamente.','success');
+                } else { showMsg('cfg-pin-msg', d.error || 'PIN actual incorrecto.','error'); }
+            } catch { showMsg('cfg-pin-msg','Error de conexión.','error'); }
+            setBtnLoading('btn-change-pin', false);
+        }
 
         function toInputDate(ddmmyyyy) {
             if (!ddmmyyyy) return todayInputDate();
