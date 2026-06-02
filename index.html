@@ -282,6 +282,7 @@
             <form id="tx-form">
                 <input type="text" id="tx-text" placeholder="Concepto" required>
                 <input type="text" inputmode="numeric" id="tx-amount" placeholder="Monto" required>
+                <input type="date" id="tx-date" required style="color:#374151;">
                 <select id="tx-type" onchange="refreshFormCats()">
                     <option value="plus">Ingreso (+)</option>
                     <option value="minus">Gasto (-)</option>
@@ -866,16 +867,18 @@
 
         document.getElementById('tx-form').addEventListener('submit', e => {
             e.preventDefault();
-            const val  = parseInt(document.getElementById('tx-amount').value.replace(/\./g,''));
-            const type = document.getElementById('tx-type').value;
+            const val     = parseInt(document.getElementById('tx-amount').value.replace(/\./g,''));
+            const type    = document.getElementById('tx-type').value;
+            const dateStr = fromInputDate(document.getElementById('tx-date').value);
             if (editingTxId !== null) {
                 if (editingIsDebt) {
                     const d = debts.find(x => x.id === editingTxId);
-                    if (d) { d.text = document.getElementById('tx-text').value; d.amount = val; }
+                    if (d) { d.text = document.getElementById('tx-text').value; d.amount = val; d.date = dateStr; }
                 } else {
                     const t = txs.find(x => x.id === editingTxId);
                     if (t) {
                         t.text = document.getElementById('tx-text').value;
+                        t.date = dateStr;
                         t.cat  = type !== 'debt' ? document.getElementById('tx-category').value : '';
                         if (type==='save')  { t.amount=-val; t.isSaving=true;  t.source=document.getElementById('tx-source').value; }
                         else if (type==='minus') { t.amount=-val; t.isSaving=false; t.source=document.getElementById('tx-source').value; }
@@ -883,7 +886,7 @@
                     }
                 }
             } else {
-                const item = { id:Date.now(), text:document.getElementById('tx-text').value, amount:val, date:new Date().toLocaleDateString('es-ES') };
+                const item = { id:Date.now(), text:document.getElementById('tx-text').value, amount:val, date:dateStr };
                 if (type==='debt') debts.push(item);
                 else {
                     item.cat = document.getElementById('tx-category').value;
@@ -929,12 +932,28 @@
         function setCatFilter(c) { filterCat = c; updateUI(); }
         function setFilter(f)    { filterType = (filterType===f)?'all':f; filterCat='all'; updateUI(); }
 
+        function toInputDate(ddmmyyyy) {
+            if (!ddmmyyyy) return todayInputDate();
+            const p = ddmmyyyy.split('/');
+            return p.length === 3 ? `${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}` : todayInputDate();
+        }
+        function fromInputDate(yyyymmdd) {
+            if (!yyyymmdd) return new Date().toLocaleDateString('es-ES');
+            const p = yyyymmdd.split('-');
+            return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : new Date().toLocaleDateString('es-ES');
+        }
+        function todayInputDate() {
+            const d = new Date();
+            return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        }
+
         function openModal(id) {
             document.getElementById(id).style.display='flex';
             if (id==='modal-add') {
                 editingTxId=null; editingIsDebt=false;
                 document.getElementById('tx-text').value='';
                 document.getElementById('tx-amount').value='';
+                document.getElementById('tx-date').value=todayInputDate();
                 document.getElementById('tx-type').value='plus';
                 document.getElementById('modal-add-title').innerText='Nuevo Registro';
                 document.getElementById('modal-add-btn').innerText='Guardar Movimiento';
@@ -950,6 +969,7 @@
             editingTxId=id; editingIsDebt=false;
             document.getElementById('tx-text').value=t.text;
             document.getElementById('tx-amount').value=fmt(Math.abs(t.amount));
+            document.getElementById('tx-date').value=toInputDate(t.date);
             document.getElementById('tx-type').value = t.isSaving?'save':(t.amount<0?'minus':'plus');
             refreshFormCats();
             if (t.cat)    document.getElementById('tx-category').value=t.cat;
@@ -963,6 +983,7 @@
             editingTxId=id; editingIsDebt=true;
             document.getElementById('tx-text').value=d.text;
             document.getElementById('tx-amount').value=fmt(d.amount);
+            document.getElementById('tx-date').value=toInputDate(d.date);
             document.getElementById('tx-type').value='debt';
             refreshFormCats();
             document.getElementById('modal-add-title').innerText='Editar Deuda';
