@@ -1,4 +1,4 @@
-const CACHE_NAME = 'control-financiero-v1';
+const CACHE_NAME = 'control-financiero-v2';
 
 // Recursos del shell que se cachean al instalar
 const SHELL_ASSETS = [
