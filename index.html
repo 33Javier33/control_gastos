@@ -565,6 +565,12 @@
             for (let i = 0; i < 4; i++)
                 document.getElementById('qdot-' + i).classList.toggle('filled', i < len);
         }
+        function resetQuickPin() {
+            const inp = document.getElementById('quick-pin');
+            inp.disabled = false;
+            inp.value = '';
+            updateQuickDots();
+        }
 
         document.getElementById('quick-pin').addEventListener('input', () => {
             updateQuickDots();
@@ -610,7 +616,7 @@
 
         function forgetDevice() {
             localStorage.removeItem('rememberedUser');
-            document.getElementById('quick-pin').value = ''; updateQuickDots();
+            resetQuickPin();
             document.getElementById('box-quick').style.display = 'none';
             document.getElementById('box-full').style.display = 'block';
             showView('login');
@@ -746,7 +752,7 @@
                     if (remembered) {
                         document.getElementById('box-full').style.display = 'none';
                         document.getElementById('box-quick').style.display = 'block';
-                        document.getElementById('quick-pin').value = ''; updateQuickDots();
+                        resetQuickPin();
                         showMsg('quick-error','✓ PIN actualizado. Ingresa tu nuevo PIN.','success');
                     } else {
                         showView('login');
@@ -771,6 +777,9 @@
         function lockByInactivity() {
             if (!currentUser) return;
             clearTimeout(inactivityTimer);
+            clearTimeout(lockoutTimer);
+            lockoutUntil = 0;
+            loginAttempts = 0;
             sessionStorage.removeItem('currentUser');
             currentUser = null;
             txs = []; debts = []; archives = []; catsInc = []; catsExp = []; catsSav = [];
@@ -780,9 +789,9 @@
                 document.getElementById('box-full').style.display = 'none';
                 document.getElementById('box-quick').style.display = 'block';
                 document.getElementById('quick-nombre').innerText = `Hola, ${JSON.parse(remembered).nombre}`;
-                document.getElementById('quick-pin').value = ''; updateQuickDots();
+                resetQuickPin();
                 showMsg('quick-error', 'Sesión cerrada por inactividad.', 'error');
-                setTimeout(() => document.getElementById('quick-pin').focus(), 300);
+                setTimeout(() => document.getElementById('quick-pin').focus(), 350);
             } else {
                 document.getElementById('box-quick').style.display = 'none';
                 document.getElementById('box-full').style.display = 'block';
@@ -820,9 +829,9 @@
                     document.getElementById('box-full').style.display = 'none';
                     document.getElementById('box-quick').style.display = 'block';
                     document.getElementById('quick-nombre').innerText = `Hola, ${JSON.parse(remembered).nombre}`;
-                    document.getElementById('quick-pin').value = ''; updateQuickDots();
+                    resetQuickPin();
                     hideMsg('quick-error');
-                    setTimeout(() => document.getElementById('quick-pin').focus(), 300);
+                    setTimeout(() => document.getElementById('quick-pin').focus(), 350);
                 } else {
                     document.getElementById('box-quick').style.display = 'none';
                     document.getElementById('box-full').style.display = 'block';
@@ -845,6 +854,7 @@
                 document.getElementById('box-quick').style.display = 'block';
                 document.getElementById('box-full').style.display = 'none';
                 document.getElementById('quick-nombre').innerText = `Hola, ${user.nombre}`;
+                resetQuickPin();
                 setTimeout(() => document.getElementById('quick-pin').focus(), 350);
             }
         })();
