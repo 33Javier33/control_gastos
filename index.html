@@ -354,6 +354,8 @@
         let editingTxId = null, editingIsDebt = false;
         let currentUser = null;
         let loginAttempts = 0, lockoutUntil = 0, lockoutTimer = null;
+        let inactivityTimer = null, lastHidden = 0;
+        const INACTIVITY_MS = 15 * 60 * 1000;
 
         // ── UTILIDADES ──
         const fmt = (n) => new Intl.NumberFormat('de-DE').format(Math.abs(n));
@@ -668,9 +670,54 @@
             }
         }
 
+        // ── CIERRE POR INACTIVIDAD ──
+        function resetInactivity() {
+            if (!currentUser) return;
+            clearTimeout(inactivityTimer);
+            inactivityTimer = setTimeout(lockByInactivity, INACTIVITY_MS);
+        }
+        function lockByInactivity() {
+            if (!currentUser) return;
+            clearTimeout(inactivityTimer);
+            sessionStorage.removeItem('currentUser');
+            currentUser = null;
+            txs = []; debts = []; archives = []; catsInc = []; catsExp = []; catsSav = [];
+            document.getElementById('login-screen').style.display = 'flex';
+            const remembered = localStorage.getItem('rememberedUser');
+            if (remembered) {
+                document.getElementById('box-full').style.display = 'none';
+                document.getElementById('box-quick').style.display = 'block';
+                document.getElementById('quick-nombre').innerText = `Hola, ${JSON.parse(remembered).nombre}`;
+                document.getElementById('quick-pin').value = ''; updateQuickDots();
+                showMsg('quick-error', 'Sesión cerrada por inactividad.', 'error');
+                setTimeout(() => document.getElementById('quick-pin').focus(), 300);
+            } else {
+                document.getElementById('box-quick').style.display = 'none';
+                document.getElementById('box-full').style.display = 'block';
+                showView('login');
+                showMsg('login-error', 'Sesión cerrada por inactividad.', 'error');
+            }
+        }
+        ['touchstart','click','keydown','scroll','touchmove'].forEach(ev =>
+            document.addEventListener(ev, resetInactivity, { passive: true })
+        );
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                lastHidden = Date.now();
+            } else {
+                if (currentUser && lastHidden && Date.now() - lastHidden >= INACTIVITY_MS) {
+                    lockByInactivity();
+                } else {
+                    resetInactivity();
+                }
+                lastHidden = 0;
+            }
+        });
+
         // ── LOGOUT ──
         function doLogout() {
             if (confirm('¿Cerrar sesión?')) {
+                clearTimeout(inactivityTimer);
                 sessionStorage.removeItem('currentUser');
                 currentUser = null;
                 txs = []; debts = []; archives = []; catsInc = []; catsExp = []; catsSav = [];
@@ -729,6 +776,7 @@
         // ── API ──
         async function fetchFromGoogle() {
             if (!currentUser) return;
+            resetInactivity();
             showLoader('Cargando tus datos...');
             document.getElementById('header-user').innerText = `Hola, ${currentUser.nombre}`;
             try {
