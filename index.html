@@ -857,10 +857,11 @@
                 catCount.innerText = `${n} movimiento${n !== 1 ? 's' : ''}`;
 
                 if (filterType === 'minus') {
-                    const total = filtered.reduce((a,b) => a + Math.abs(b.amount), 0);
+                    const total  = filtered.reduce((a,b) => a + Math.abs(b.amount), 0);
+                    const mayor  = n ? Math.max(...filtered.map(t => Math.abs(t.amount))) : 0;
                     catTotal.innerText = `-$${fmt(total)}`;
                     catTotal.className = 'banner-total minus-txt';
-                    catMeta.innerHTML = `<div class="banner-meta-item"><span>Promedio por mov.</span><b>$${fmt(n ? Math.round(total/n) : 0)}</b></div>`;
+                    catMeta.innerHTML = `<div class="banner-meta-item"><span>Mayor gasto</span><b class="minus-txt">$${fmt(mayor)}</b></div>`;
                 } else if (filterType === 'plus') {
                     const earned = filtered.filter(t => t.amount > 0).reduce((a,b) => a+b.amount, 0);
                     const spent  = Math.abs(data.filter(t => t.amount < 0 && !t.isSaving && t.source === filterCat).reduce((a,b) => a+b.amount, 0));
@@ -874,9 +875,10 @@
                         <div class="banner-meta-item"><span>Ahorrado</span><b class="save-txt">-$${fmt(saved)}</b></div>`;
                 } else if (filterType === 'save') {
                     const total = filtered.reduce((a,b) => a + Math.abs(b.amount), 0);
+                    const mayor = n ? Math.max(...filtered.map(t => Math.abs(t.amount))) : 0;
                     catTotal.innerText = `$${fmt(total)}`;
                     catTotal.className = 'banner-total save-txt';
-                    catMeta.innerHTML = `<div class="banner-meta-item"><span>Promedio por mov.</span><b>$${fmt(n ? Math.round(total/n) : 0)}</b></div>`;
+                    catMeta.innerHTML = `<div class="banner-meta-item"><span>Mayor aporte</span><b class="save-txt">$${fmt(mayor)}</b></div>`;
                 }
             } else { banner.style.display = 'none'; }
 
