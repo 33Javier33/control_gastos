@@ -1240,7 +1240,20 @@
         // ── SERVICE WORKER ──
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js').catch(() => {});
+                navigator.serviceWorker.register('/sw.js').then(reg => {
+                    reg.addEventListener('updatefound', () => {
+                        const sw = reg.installing;
+                        sw.addEventListener('statechange', () => {
+                            if (sw.state === 'installed' && navigator.serviceWorker.controller) {
+                                showToast('Nueva versión disponible — recargando...', '');
+                                setTimeout(() => window.location.reload(), 1500);
+                            }
+                        });
+                    });
+                }).catch(() => {});
+                navigator.serviceWorker.addEventListener('controllerchange', () => {
+                    window.location.reload();
+                });
             });
         }
     </script>

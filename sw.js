@@ -1,9 +1,6 @@
-const CACHE_NAME = 'control-financiero-v2';
+const CACHE_NAME = 'control-financiero-v4';
 
-// Recursos del shell que se cachean al instalar
-const SHELL_ASSETS = [
-  '/',
-  '/index.html',
+const STATIC_ASSETS = [
   '/manifest.json',
   '/icons/icon.svg',
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css',
@@ -11,15 +8,15 @@ const SHELL_ASSETS = [
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/webfonts/fa-regular-400.woff2'
 ];
 
-// ── INSTALL: cachea el shell de la app ──────────────────────────────────────
+// ── INSTALL: cachea solo los assets estáticos (NO index.html) ───────────────
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(SHELL_ASSETS))
+    caches.open(CACHE_NAME).then(cache => cache.addAll(STATIC_ASSETS))
   );
   self.skipWaiting();
 });
 
-// ── ACTIVATE: elimina cachés antiguas ───────────────────────────────────────
+// ── ACTIVATE: elimina cachés antiguas y toma control inmediato ───────────────
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys =>
@@ -29,11 +26,11 @@ self.addEventListener('activate', event => {
   self.clients.claim();
 });
 
-// ── FETCH: estrategia según tipo de request ──────────────────────────────────
+// ── FETCH ────────────────────────────────────────────────────────────────────
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
 
-  // Las llamadas a Google Apps Script siempre van a la red (datos en tiempo real)
+  // Google Apps Script: siempre red
   if (url.hostname.includes('script.google.com')) {
     event.respondWith(
       fetch(event.request).catch(() =>
@@ -45,12 +42,25 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // Para todo lo demás: cache-first, red como fallback
+  // index.html: network-first → siempre muestra la versión más reciente
+  if (url.pathname === '/' || url.pathname === '/index.html') {
+    event.respondWith(
+      fetch(event.request)
+        .then(response => {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+          return response;
+        })
+        .catch(() => caches.match('/index.html'))
+    );
+    return;
+  }
+
+  // Assets estáticos (iconos, fuentes, CDN): cache-first
   event.respondWith(
     caches.match(event.request).then(cached => {
       if (cached) return cached;
       return fetch(event.request).then(response => {
-        // Solo cachea respuestas válidas de mismo origen o CDN conocidas
         if (
           response.ok &&
           (url.origin === self.location.origin ||
@@ -61,9 +71,6 @@ self.addEventListener('fetch', event => {
         }
         return response;
       });
-    }).catch(() =>
-      // Sin caché y sin red: muestra el index cacheado
-      caches.match('/index.html')
-    )
+    }).catch(() => caches.match('/index.html'))
   );
 });
