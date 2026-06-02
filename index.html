@@ -114,8 +114,14 @@
 
         /* ── FEED ── */
         .main-feed { flex: 1; overflow-y: auto; padding: 0 20px 80px; -webkit-overflow-scrolling: touch; }
-        .item-card { background: var(--card); padding: 16px; border-radius: 18px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
-        .item-info b { display: block; font-size: 0.95rem; }
+        .item-card { background: var(--card); padding: 14px 16px; border-radius: 18px; margin-bottom: 12px; display: flex; align-items: center; gap: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        .item-info { flex: 1; min-width: 0; }
+        .item-info b { display: block; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .tx-icon { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1rem; }
+        .tx-icon.inc { background: #dcfce7; color: #16a34a; }
+        .tx-icon.exp { background: #fee2e2; color: #dc2626; }
+        .tx-icon.sav { background: #cffafe; color: #0891b2; }
+        .tx-icon.dbt { background: #fef9c3; color: #ca8a04; }
         .tag { display: inline-block; font-size: 0.6rem; background: #f1f5f9; padding: 2px 6px; border-radius: 5px; font-weight: bold; margin-top: 4px; color: #64748b; }
         .source-tag { background: #e0e7ff; color: var(--p); border: 1px solid #c7d2fe; }
         .save-tag { background: #cffafe; color: var(--s); border: 1px solid #a5f3fc; }
@@ -875,18 +881,24 @@
             } else { banner.style.display = 'none'; }
 
             filtered.sort((a,b) => b.id - a.id).forEach(t => {
+                const iconClass = t.isD ? 'dbt' : (t.isSaving ? 'sav' : (t.amount > 0 ? 'inc' : 'exp'));
+                const iconName  = t.isD ? 'fa-file-invoice-dollar' : (t.isSaving ? 'fa-piggy-bank' : (t.amount > 0 ? 'fa-arrow-up' : 'fa-arrow-down'));
                 const div = document.createElement('div');
                 div.className = 'item-card';
-                div.innerHTML = `<div class="item-info">
-                    <b>${t.text}</b><small>${t.date}</small><br>
-                    <span class="tag ${t.isSaving?'save-tag':''}">${t.cat || ''}</span>
-                    ${t.source ? `<span class="tag source-tag">← ${t.source}</span>` : ''}
-                </div><div style="display:flex;align-items:center;gap:8px;">
-                    ${t.isD && !viewingArchive ? `<button onclick="startPayDebt(${t.id})" style="background:var(--i);color:white;border:none;border-radius:8px;font-weight:800;font-size:0.65rem;padding:6px 10px;cursor:pointer;">PAGAR</button>`:''}
-                    <span class="amount ${t.isD?'debt-txt':(t.isSaving?'save-txt':(t.amount>0?'plus-txt':'minus-txt'))}">$${fmt(t.amount)}</span>
-                    ${!viewingArchive ? `<i class="fa-solid fa-pen-to-square" style="color:#94a3b8;font-size:1.1rem;cursor:pointer;" onclick="${t.isD?'editDb':'editTx'}(${t.id})"></i>`:''}
-                    ${!viewingArchive ? `<i class="fa-solid fa-circle-xmark" style="color:#e2e8f0;font-size:1.3rem;cursor:pointer;" onclick="${t.isD?'delDb':'delTx'}(${t.id})"></i>`:''}
-                </div>`;
+                div.innerHTML = `
+                    <div class="tx-icon ${iconClass}"><i class="fa-solid ${iconName}"></i></div>
+                    <div class="item-info">
+                        <b>${t.text}</b>
+                        <small style="color:#94a3b8;">${t.date}</small><br>
+                        ${t.cat ? `<span class="tag ${t.isSaving?'save-tag':''}">${t.cat}</span>` : ''}
+                        ${t.source ? `<span class="tag source-tag">← ${t.source}</span>` : ''}
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+                        ${t.isD && !viewingArchive ? `<button onclick="startPayDebt(${t.id})" style="background:var(--i);color:white;border:none;border-radius:8px;font-weight:800;font-size:0.65rem;padding:6px 10px;cursor:pointer;">PAGAR</button>`:''}
+                        <span class="amount ${t.isD?'debt-txt':(t.isSaving?'save-txt':(t.amount>0?'plus-txt':'minus-txt'))}" style="font-weight:700;font-size:0.95rem;">$${fmt(t.amount)}</span>
+                        ${!viewingArchive ? `<i class="fa-solid fa-pen-to-square" style="color:#94a3b8;font-size:1.1rem;cursor:pointer;" onclick="${t.isD?'editDb':'editTx'}(${t.id})"></i>`:''}
+                        ${!viewingArchive ? `<i class="fa-solid fa-circle-xmark" style="color:#e2e8f0;font-size:1.3rem;cursor:pointer;" onclick="${t.isD?'delDb':'delTx'}(${t.id})"></i>`:''}
+                    </div>`;
                 list.appendChild(div);
             });
 
