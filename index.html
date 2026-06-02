@@ -215,6 +215,10 @@
                 <input class="auth-input" type="text" id="reg-nombre" placeholder="Nombre completo" autocomplete="name">
                 <input class="auth-input" type="tel" id="reg-pass" placeholder="PIN (4 dígitos)" inputmode="numeric" maxlength="4" pattern="[0-9]*" autocomplete="off">
                 <input class="auth-input" type="tel" id="reg-pass2" placeholder="Confirmar PIN" inputmode="numeric" maxlength="4" pattern="[0-9]*" autocomplete="off">
+                <div style="font-size:0.72rem; color:rgba(255,255,255,0.55); line-height:1.45; margin:2px 0 12px; text-align:left; padding:10px 12px; background:rgba(0,0,0,0.15); border-radius:10px;">
+                    <i class="fa-solid fa-shield-halved" style="margin-right:4px;"></i>
+                    Tu PIN se guarda como hash SHA-256 (irreversible). Tus movimientos financieros se almacenan en Google Sheets gestionado por el administrador de la app.
+                </div>
                 <div class="auth-msg" id="reg-error"></div>
                 <div class="auth-msg" id="reg-success"></div>
                 <button id="btn-register" class="btn-auth" onclick="doRegister()"><i class="fa-solid fa-user-plus"></i> &nbsp;Crear Cuenta</button>

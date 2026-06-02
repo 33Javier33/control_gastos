@@ -8,7 +8,26 @@
  * 3. Ejecutar como: Yo
  * 4. Quién tiene acceso: Cualquier persona
  * 5. Copia la URL generada y pégala en index.html (constante WEB_APP_URL)
+ *
+ * PRIVACIDAD:
+ * - Los PINs se almacenan como hash SHA-256 irreversible (nunca en texto plano).
+ * - Los datos financieros se almacenan en texto plano en Google Sheets.
+ * - El administrador de la planilla puede ver los movimientos de los usuarios.
  */
+
+// ── HASH DE PIN (SHA-256 con RUT como salt) ──────────────────────────────────
+
+function hashPin(pin, rut) {
+  const bytes = Utilities.computeDigest(
+    Utilities.DigestAlgorithm.SHA_256,
+    pin + '::' + rut
+  );
+  return bytes.map(b => ('0' + (b & 0xFF).toString(16)).slice(-2)).join('');
+}
+
+function isHashed(value) {
+  return /^[0-9a-f]{64}$/.test(value);
+}
 
 // ── INICIALIZACIÓN DE HOJAS ──────────────────────────────────────────────────
 
@@ -48,9 +67,30 @@ function doGet(e) {
   if (action === 'login') {
     const rut  = (e.parameter.rut  || '').toUpperCase();
     const pass = (e.parameter.pass || '');
-    const users = ss.getSheetByName('Usuarios').getDataRange().getValues().slice(1);
-    const user  = users.find(r => String(r[0]).toUpperCase() === rut && String(r[2]) === pass);
-    return user ? json({ ok: true, nombre: user[1] }) : json({ ok: false });
+    const sh   = ss.getSheetByName('Usuarios');
+    const data = sh.getDataRange().getValues();
+    const users = data.slice(1);
+
+    const hashed = hashPin(pass, rut);
+
+    // Busca con hash primero
+    let userIdx = users.findIndex(r =>
+      String(r[0]).toUpperCase() === rut && String(r[2]) === hashed
+    );
+
+    if (userIdx === -1) {
+      // Migración: PIN en texto plano (usuarios pre-hash)
+      userIdx = users.findIndex(r =>
+        String(r[0]).toUpperCase() === rut && !isHashed(String(r[2])) && String(r[2]) === pass
+      );
+      if (userIdx !== -1) {
+        // Actualiza a hash automáticamente
+        sh.getRange(userIdx + 2, 3).setValue(hashed);
+      }
+    }
+
+    if (userIdx === -1) return json({ ok: false });
+    return json({ ok: true, nombre: users[userIdx][1] });
   }
 
   // ── Verificar RUT para recuperación de PIN ──
@@ -61,7 +101,7 @@ function doGet(e) {
     return user ? json({ ok: true, nombre: user[1] }) : json({ ok: false });
   }
 
-  // ── Cambiar nombre (usuario autenticado) ──
+  // ── Cambiar nombre ──
   if (action === 'updateName') {
     const rut    = (e.parameter.rut    || '').toUpperCase();
     const nombre = (e.parameter.nombre || '').trim();
@@ -82,9 +122,15 @@ function doGet(e) {
     if (!/^\d{4}$/.test(newPass)) return json({ ok: false, error: 'PIN debe ser 4 dígitos' });
     const sh     = ss.getSheetByName('Usuarios');
     const data   = sh.getDataRange().getValues();
-    const rowIdx = data.slice(1).findIndex(r => String(r[0]).toUpperCase() === rut && String(r[2]) === oldPass);
+    const oldHashed = hashPin(oldPass, rut);
+    // Soporta migración: acepta plain o hash
+    const rowIdx = data.slice(1).findIndex(r => {
+      if (String(r[0]).toUpperCase() !== rut) return false;
+      const stored = String(r[2]);
+      return stored === oldHashed || (!isHashed(stored) && stored === oldPass);
+    });
     if (rowIdx === -1) return json({ ok: false, error: 'PIN actual incorrecto' });
-    sh.getRange(rowIdx + 2, 3).setValue(newPass);
+    sh.getRange(rowIdx + 2, 3).setValue(hashPin(newPass, rut));
     return json({ ok: true });
   }
 
@@ -97,7 +143,7 @@ function doGet(e) {
     const data   = sh.getDataRange().getValues();
     const rowIdx = data.slice(1).findIndex(r => String(r[0]).toUpperCase() === rut);
     if (rowIdx === -1) return json({ ok: false, error: 'RUT no registrado' });
-    sh.getRange(rowIdx + 2, 3).setValue(newPass);
+    sh.getRange(rowIdx + 2, 3).setValue(hashPin(newPass, rut));
     return json({ ok: true });
   }
 
@@ -143,8 +189,10 @@ function doPost(e) {
     const shUsers = ss.getSheetByName('Usuarios');
     const exists  = shUsers.getDataRange().getValues().slice(1)
       .some(r => String(r[0]).toUpperCase() === rut);
-    if (!/^\d{4}$/.test(body.pass)) return ContentService.createTextOutput(JSON.stringify({ ok: false, error: 'PIN debe ser 4 dígitos' })).setMimeType(ContentService.MimeType.JSON);
-    if (!exists) shUsers.appendRow([rut, body.nombre, body.pass]);
+    if (!/^\d{4}$/.test(body.pass)) return ContentService.createTextOutput(
+      JSON.stringify({ ok: false, error: 'PIN debe ser 4 dígitos' })
+    ).setMimeType(ContentService.MimeType.JSON);
+    if (!exists) shUsers.appendRow([rut, body.nombre, hashPin(body.pass, rut)]);
     return ContentService.createTextOutput('OK').setMimeType(ContentService.MimeType.TEXT);
   }
 
@@ -153,7 +201,6 @@ function doPost(e) {
     const rut  = (body.rut || '').toUpperCase();
     const data = body.data;
 
-    // Reescribe las filas del usuario en cada hoja conservando las de otros usuarios
     const rewrite = (sheetName, headers, newRows) => {
       const sh      = ss.getSheetByName(sheetName);
       const others  = sh.getDataRange().getValues().slice(1)
