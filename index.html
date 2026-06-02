@@ -426,6 +426,13 @@
                 </details>
             </div>
 
+            <div class="settings-section">
+                <div class="settings-label"><i class="fa-solid fa-share-nodes" style="margin-right:5px;color:var(--p);"></i>Compartir app</div>
+                <button class="btn-full" onclick="shareApp()" style="background: linear-gradient(135deg,#25d366,#128c7e); display:flex; align-items:center; justify-content:center; gap:10px;">
+                    <i class="fa-solid fa-share-nodes"></i> Compartir con amigos
+                </button>
+            </div>
+
             <button class="btn-full" style="background:#94a3b8;" onclick="closeModal('modal-settings')">Cerrar</button>
         </div>
     </div>
@@ -1106,6 +1113,22 @@
                 } else { showMsg('cfg-name-msg', d.error || 'Error al actualizar.','error'); }
             } catch { showMsg('cfg-name-msg','Error de conexión.','error'); }
             setBtnLoading('btn-update-name', false);
+        }
+
+        async function shareApp() {
+            const url  = 'https://control-gastos-eight-theta.vercel.app';
+            const text = '💰 Control Financiero — lleva el control de tus ingresos, gastos y ahorros desde el celular. ¡Instálalo gratis!';
+            if (navigator.share) {
+                try { await navigator.share({ title: 'Control Financiero', text, url }); }
+                catch (e) { if (e.name !== 'AbortError') copyToClipboard(url); }
+            } else {
+                copyToClipboard(url);
+            }
+        }
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text)
+                .then(() => showToast('✓ Enlace copiado al portapapeles', 'ok'))
+                .catch(() => showToast('Copia este enlace: ' + text, ''));
         }
 
         async function doChangePass() {
