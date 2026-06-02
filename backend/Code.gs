@@ -53,6 +53,27 @@ function doGet(e) {
     return user ? json({ ok: true, nombre: user[1] }) : json({ ok: false });
   }
 
+  // ── Verificar RUT para recuperación de PIN ──
+  if (action === 'checkRut') {
+    const rut   = (e.parameter.rut || '').toUpperCase();
+    const users = ss.getSheetByName('Usuarios').getDataRange().getValues().slice(1);
+    const user  = users.find(r => String(r[0]).toUpperCase() === rut);
+    return user ? json({ ok: true, nombre: user[1] }) : json({ ok: false });
+  }
+
+  // ── Restablecer PIN ──
+  if (action === 'resetPass') {
+    const rut     = (e.parameter.rut     || '').toUpperCase();
+    const newPass = (e.parameter.newPass || '');
+    if (!/^\d{4}$/.test(newPass)) return json({ ok: false, error: 'PIN debe ser 4 dígitos' });
+    const sh     = ss.getSheetByName('Usuarios');
+    const data   = sh.getDataRange().getValues();
+    const rowIdx = data.slice(1).findIndex(r => String(r[0]).toUpperCase() === rut);
+    if (rowIdx === -1) return json({ ok: false, error: 'RUT no registrado' });
+    sh.getRange(rowIdx + 2, 3).setValue(newPass);
+    return json({ ok: true });
+  }
+
   // ── Datos del usuario ──
   if (action === 'data') {
     const rut    = (e.parameter.rut || '').toUpperCase();
@@ -95,6 +116,7 @@ function doPost(e) {
     const shUsers = ss.getSheetByName('Usuarios');
     const exists  = shUsers.getDataRange().getValues().slice(1)
       .some(r => String(r[0]).toUpperCase() === rut);
+    if (!/^\d{4}$/.test(body.pass)) return ContentService.createTextOutput(JSON.stringify({ ok: false, error: 'PIN debe ser 4 dígitos' })).setMimeType(ContentService.MimeType.JSON);
     if (!exists) shUsers.appendRow([rut, body.nombre, body.pass]);
     return ContentService.createTextOutput('OK').setMimeType(ContentService.MimeType.TEXT);
   }

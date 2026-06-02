@@ -50,6 +50,22 @@
         .lockout-bar { height: 4px; background: rgba(255,255,255,0.18); border-radius: 4px; margin-bottom: 11px; display: none; overflow: hidden; }
         .lockout-fill { height: 100%; background: #fca5a5; border-radius: 4px; transition: width 1s linear; }
 
+        /* ── PIN RÁPIDO ── */
+        .pin-area { position: relative; height: 64px; margin: 18px auto 6px; width: 200px; border-radius: 16px; background: rgba(255,255,255,0.1); cursor: pointer; }
+        .pin-dots { position: absolute; inset: 0; display: flex; gap: 22px; align-items: center; justify-content: center; pointer-events: none; z-index: 2; }
+        .pin-dot { width: 16px; height: 16px; border-radius: 50%; border: 2.5px solid rgba(255,255,255,0.4); transition: all 0.15s ease; }
+        .pin-dot.filled { background: white; border-color: white; transform: scale(1.18); box-shadow: 0 0 8px rgba(255,255,255,0.4); }
+        .pin-real-input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; font-size: 16px; border: none; background: transparent; z-index: 1; }
+        @keyframes shake { 0%,100%{transform:translateX(0)} 25%,75%{transform:translateX(-8px)} 50%{transform:translateX(8px)} }
+        .shake { animation: shake 0.35s ease; }
+        /* ── RECORDAR DISPOSITIVO ── */
+        .remember-row { display: flex; align-items: center; gap: 10px; margin: 2px 0 12px; text-align: left; }
+        .remember-row input[type=checkbox] { width: 18px; height: 18px; accent-color: #a5b4fc; flex-shrink: 0; margin: 0; }
+        .remember-row label { font-size: 0.85rem; color: rgba(255,255,255,0.82); cursor: pointer; line-height: 1.3; }
+        /* ── ENLACE ── */
+        .auth-link { background: none; border: none; color: rgba(255,255,255,0.58); font-size: 0.82rem; cursor: pointer; padding: 4px 2px; text-decoration: underline; }
+        .auth-link:active { color: white; }
+
         /* ── LOADER ── */
         #loader { position: fixed; inset: 0; background: rgba(255,255,255,0.92); z-index: 500; display: none; flex-direction: column; align-items: center; justify-content: center; }
         .spinner { width: 40px; height: 40px; border: 4px solid #ddd; border-top-color: var(--p); border-radius: 50%; animation: spin 1s linear infinite; }
@@ -106,33 +122,87 @@
 
     <!-- ── PANTALLA LOGIN ── -->
     <div id="login-screen">
-        <div class="login-box">
+
+        <!-- ACCESO RÁPIDO (usuario recordado en dispositivo) -->
+        <div class="login-box" id="box-quick" style="display:none; text-align:center;">
+            <i class="fa-solid fa-circle-user" style="font-size:3rem; opacity:0.88; margin-bottom:8px;"></i>
+            <h3 id="quick-nombre" style="margin:6px 0 2px; font-size:1.25rem;"></h3>
+            <p style="opacity:0.65; font-size:0.85rem; margin:0 0 2px;">Ingresa tu PIN de 4 dígitos</p>
+            <div class="pin-area" onclick="document.getElementById('quick-pin').focus()">
+                <div class="pin-dots" id="quick-dots">
+                    <span class="pin-dot" id="qdot-0"></span>
+                    <span class="pin-dot" id="qdot-1"></span>
+                    <span class="pin-dot" id="qdot-2"></span>
+                    <span class="pin-dot" id="qdot-3"></span>
+                </div>
+                <input class="pin-real-input" type="password" id="quick-pin"
+                       inputmode="numeric" maxlength="4" autocomplete="current-password">
+            </div>
+            <div class="lockout-bar" id="qlockout-bar"><div class="lockout-fill" id="qlockout-fill"></div></div>
+            <div class="auth-msg" id="quick-error"></div>
+            <div style="margin-top:14px; display:flex; flex-direction:column; gap:6px; align-items:center;">
+                <button class="auth-link" onclick="goToReset()">¿Olvidaste tu PIN?</button>
+                <button class="auth-link" onclick="forgetDevice()"><i class="fa-solid fa-arrow-right-arrow-left" style="font-size:0.75rem;"></i> No soy yo</button>
+            </div>
+        </div>
+
+        <!-- CAJA PRINCIPAL (login / registro / recuperar) -->
+        <div class="login-box" id="box-full">
             <div class="icon"><i class="fa-solid fa-vault"></i></div>
             <h3>Control Financiero</h3>
 
-            <div class="auth-tabs">
-                <button class="auth-tab active" id="tab-login" onclick="switchTab('login')">Ingresar</button>
-                <button class="auth-tab" id="tab-register" onclick="switchTab('register')">Registrarse</button>
+            <div class="auth-tabs" id="auth-tabs">
+                <button class="auth-tab active" id="tab-login" onclick="showView('login')">Ingresar</button>
+                <button class="auth-tab" id="tab-register" onclick="showView('register')">Registrarse</button>
             </div>
 
             <!-- INGRESAR -->
-            <div id="form-login">
+            <div id="view-login">
                 <input class="auth-input" type="text" id="login-rut" placeholder="RUT (ej: 12.345.678-9)" inputmode="numeric" autocomplete="username">
-                <input class="auth-input" type="password" id="login-pass" placeholder="Contraseña" autocomplete="current-password">
+                <input class="auth-input" type="password" id="login-pass" placeholder="PIN (4 dígitos)" inputmode="numeric" maxlength="4" autocomplete="current-password">
+                <div class="remember-row">
+                    <input type="checkbox" id="remember-me">
+                    <label for="remember-me">Recordar en este dispositivo</label>
+                </div>
                 <div class="lockout-bar" id="lockout-bar"><div class="lockout-fill" id="lockout-fill"></div></div>
-                <div class="auth-msg error" id="login-error"></div>
+                <div class="auth-msg" id="login-error"></div>
                 <button class="btn-auth" onclick="doLogin()"><i class="fa-solid fa-right-to-bracket"></i> &nbsp;Ingresar</button>
+                <div style="text-align:center; margin-top:12px;">
+                    <button class="auth-link" onclick="showView('reset')">¿Olvidaste tu PIN?</button>
+                </div>
             </div>
 
             <!-- REGISTRARSE -->
-            <div id="form-register" style="display:none">
+            <div id="view-register" style="display:none">
                 <input class="auth-input" type="text" id="reg-rut" placeholder="RUT (ej: 12.345.678-9)" inputmode="numeric">
                 <input class="auth-input" type="text" id="reg-nombre" placeholder="Nombre completo" autocomplete="name">
-                <input class="auth-input" type="password" id="reg-pass" placeholder="Contraseña (mín. 6 caracteres)" autocomplete="new-password">
-                <input class="auth-input" type="password" id="reg-pass2" placeholder="Confirmar contraseña" autocomplete="new-password">
-                <div class="auth-msg error" id="reg-error"></div>
-                <div class="auth-msg success" id="reg-success"></div>
+                <input class="auth-input" type="password" id="reg-pass" placeholder="PIN (4 dígitos)" inputmode="numeric" maxlength="4" autocomplete="new-password">
+                <input class="auth-input" type="password" id="reg-pass2" placeholder="Confirmar PIN" inputmode="numeric" maxlength="4" autocomplete="new-password">
+                <div class="auth-msg" id="reg-error"></div>
+                <div class="auth-msg" id="reg-success"></div>
                 <button class="btn-auth" onclick="doRegister()"><i class="fa-solid fa-user-plus"></i> &nbsp;Crear Cuenta</button>
+            </div>
+
+            <!-- RECUPERAR PIN -->
+            <div id="view-reset" style="display:none">
+                <!-- Paso 1: verificar RUT -->
+                <div id="reset-step1">
+                    <p style="font-size:0.86rem; opacity:0.8; margin:0 0 14px; text-align:left; line-height:1.4;">Ingresa tu RUT para verificar tu identidad y establecer un nuevo PIN.</p>
+                    <input class="auth-input" type="text" id="reset-rut" placeholder="RUT (ej: 12.345.678-9)" inputmode="numeric">
+                    <div class="auth-msg" id="reset-error"></div>
+                    <button class="btn-auth" onclick="checkRutForReset()">Continuar →</button>
+                </div>
+                <!-- Paso 2: nuevo PIN -->
+                <div id="reset-step2" style="display:none">
+                    <p id="reset-welcome" style="font-size:0.9rem; font-weight:700; margin:0 0 14px; text-align:left;"></p>
+                    <input class="auth-input" type="password" id="reset-newpass" placeholder="Nuevo PIN (4 dígitos)" inputmode="numeric" maxlength="4">
+                    <input class="auth-input" type="password" id="reset-newpass2" placeholder="Confirmar PIN" inputmode="numeric" maxlength="4">
+                    <div class="auth-msg" id="reset-error2"></div>
+                    <button class="btn-auth" onclick="doResetPass()" style="background:#10b981;">Guardar nuevo PIN</button>
+                </div>
+                <div style="text-align:center; margin-top:12px;">
+                    <button class="auth-link" onclick="showView('login')">← Volver al inicio</button>
+                </div>
             </div>
         </div>
     </div>
@@ -309,53 +379,121 @@
             e.target.value = v;
         }
 
-        // ── TABS LOGIN/REGISTRO ──
-        function switchTab(tab) {
-            document.getElementById('form-login').style.display = tab === 'login' ? 'block' : 'none';
-            document.getElementById('form-register').style.display = tab === 'register' ? 'block' : 'none';
-            document.getElementById('tab-login').classList.toggle('active', tab === 'login');
-            document.getElementById('tab-register').classList.toggle('active', tab === 'register');
+        // ── VISTAS LOGIN ──
+        function showView(view) {
+            ['view-login','view-register','view-reset'].forEach(v =>
+                document.getElementById(v).style.display = 'none'
+            );
+            document.getElementById('view-' + view).style.display = 'block';
+            const showTabs = view === 'login' || view === 'register';
+            document.getElementById('auth-tabs').style.display = showTabs ? 'flex' : 'none';
+            document.getElementById('tab-login').classList.toggle('active', view === 'login');
+            document.getElementById('tab-register').classList.toggle('active', view === 'register');
+            if (view === 'reset') {
+                document.getElementById('reset-step1').style.display = 'block';
+                document.getElementById('reset-step2').style.display = 'none';
+                document.getElementById('reset-rut').value = '';
+                ['reset-error','reset-error2'].forEach(id => hideMsg(id));
+            }
         }
 
         function showMsg(id, text, type) {
             const el = document.getElementById(id);
-            el.textContent = text;
-            el.className = `auth-msg ${type}`;
-            el.style.display = 'block';
+            el.textContent = text; el.className = `auth-msg ${type}`; el.style.display = 'block';
         }
         function hideMsg(id) { document.getElementById(id).style.display = 'none'; }
 
         // ── BLOQUEO POR INTENTOS ──
-        function startLockout() {
+        function startLockout(barPrefix, errId) {
             clearTimeout(lockoutTimer);
             lockoutUntil = Date.now() + 30000;
-            const bar = document.getElementById('lockout-bar');
-            const fill = document.getElementById('lockout-fill');
-            bar.style.display = 'block';
-            fill.style.width = '100%';
+            const bar  = document.getElementById(barPrefix + '-bar');
+            const fill = document.getElementById(barPrefix + '-fill');
+            bar.style.display = 'block'; fill.style.width = '100%';
             const tick = () => {
                 const rem = lockoutUntil - Date.now();
                 if (rem <= 0) {
-                    bar.style.display = 'none';
-                    fill.style.width = '100%';
-                    loginAttempts = 0;
-                    hideMsg('login-error');
-                    return;
+                    bar.style.display = 'none'; fill.style.width = '100%';
+                    loginAttempts = 0; hideMsg(errId); return;
                 }
                 fill.style.width = (rem / 30000 * 100) + '%';
-                showMsg('login-error', `Demasiados intentos fallidos. Espera ${Math.ceil(rem / 1000)} segundos.`, 'error');
+                showMsg(errId, `Demasiados intentos. Espera ${Math.ceil(rem/1000)}s`, 'error');
                 lockoutTimer = setTimeout(tick, 1000);
             };
             tick();
         }
 
-        // ── LOGIN ──
+        // ── PIN DOTS (acceso rápido) ──
+        function updateQuickDots() {
+            const len = document.getElementById('quick-pin').value.length;
+            for (let i = 0; i < 4; i++)
+                document.getElementById('qdot-' + i).classList.toggle('filled', i < len);
+        }
+
+        document.getElementById('quick-pin').addEventListener('input', () => {
+            updateQuickDots();
+            if (document.getElementById('quick-pin').value.length === 4) doQuickLogin();
+        });
+
+        async function doQuickLogin() {
+            if (Date.now() < lockoutUntil) return;
+            const pin = document.getElementById('quick-pin').value;
+            const remembered = JSON.parse(localStorage.getItem('rememberedUser') || '{}');
+            if (!remembered.rut) return;
+            document.getElementById('loader').style.display = 'flex';
+            try {
+                const res = await fetch(`${WEB_APP_URL}?action=login&rut=${encodeURIComponent(remembered.rut)}&pass=${encodeURIComponent(pin)}`);
+                const d = await res.json();
+                if (d.ok) {
+                    loginAttempts = 0;
+                    currentUser = { rut: remembered.rut, nombre: d.nombre };
+                    sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+                    document.getElementById('login-screen').style.display = 'none';
+                    fetchFromGoogle();
+                } else {
+                    loginAttempts++;
+                    document.getElementById('quick-pin').value = ''; updateQuickDots();
+                    const dots = document.getElementById('quick-dots');
+                    dots.classList.add('shake');
+                    setTimeout(() => dots.classList.remove('shake'), 400);
+                    const left = 3 - loginAttempts;
+                    if (loginAttempts >= 3) startLockout('qlockout', 'quick-error');
+                    else showMsg('quick-error', `PIN incorrecto. ${left} intento${left!==1?'s':''} restante${left!==1?'s':''}.`, 'error');
+                }
+            } catch { showMsg('quick-error', 'Error de conexión.', 'error'); }
+            document.getElementById('loader').style.display = 'none';
+        }
+
+        function forgetDevice() {
+            localStorage.removeItem('rememberedUser');
+            document.getElementById('quick-pin').value = ''; updateQuickDots();
+            document.getElementById('box-quick').style.display = 'none';
+            document.getElementById('box-full').style.display = 'block';
+            showView('login');
+        }
+
+        function goToReset() {
+            const remembered = JSON.parse(localStorage.getItem('rememberedUser') || '{}');
+            document.getElementById('box-quick').style.display = 'none';
+            document.getElementById('box-full').style.display = 'block';
+            showView('reset');
+            if (remembered.rut) document.getElementById('reset-rut').value = formatRUTDisplay(remembered.rut);
+        }
+
+        function formatRUTDisplay(rut) {
+            const c = rut.replace(/[\.\-]/g,'');
+            if (c.length < 2) return rut;
+            return c.slice(0,-1).replace(/\B(?=(\d{3})+(?!\d))/g,'.') + '-' + c.slice(-1);
+        }
+
+        // ── LOGIN COMPLETO ──
         async function doLogin() {
             if (Date.now() < lockoutUntil) return;
-            const rut = document.getElementById('login-rut').value.trim();
+            const rut  = document.getElementById('login-rut').value.trim();
             const pass = document.getElementById('login-pass').value;
-            if (!rut || !pass) { showMsg('login-error', 'Completa RUT y contraseña.', 'error'); return; }
-            if (!validateRUT(rut)) { showMsg('login-error', 'RUT inválido. Verifica el dígito verificador.', 'error'); return; }
+            if (!rut || !pass) { showMsg('login-error','Completa RUT y PIN.','error'); return; }
+            if (!validateRUT(rut)) { showMsg('login-error','RUT inválido. Verifica el dígito verificador.','error'); return; }
+            if (!/^\d{4}$/.test(pass)) { showMsg('login-error','El PIN debe ser exactamente 4 dígitos.','error'); return; }
             hideMsg('login-error');
             document.getElementById('loader').style.display = 'flex';
             try {
@@ -365,53 +503,94 @@
                     loginAttempts = 0;
                     currentUser = { rut: normalizeRUT(rut), nombre: d.nombre };
                     sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+                    if (document.getElementById('remember-me').checked) {
+                        localStorage.setItem('rememberedUser', JSON.stringify({ rut: currentUser.rut, nombre: currentUser.nombre }));
+                    }
                     document.getElementById('login-screen').style.display = 'none';
                     fetchFromGoogle();
                 } else {
                     loginAttempts++;
                     const left = 3 - loginAttempts;
-                    if (loginAttempts >= 3) {
-                        startLockout();
-                    } else {
-                        showMsg('login-error', `RUT o contraseña incorrectos. ${left} intento${left !== 1 ? 's' : ''} restante${left !== 1 ? 's' : ''}.`, 'error');
-                    }
+                    if (loginAttempts >= 3) startLockout('lockout','login-error');
+                    else showMsg('login-error', `RUT o PIN incorrectos. ${left} intento${left!==1?'s':''} restante${left!==1?'s':''}.`, 'error');
                 }
-            } catch { showMsg('login-error', 'Error de conexión. Intenta de nuevo.', 'error'); }
+            } catch { showMsg('login-error','Error de conexión. Intenta de nuevo.','error'); }
             document.getElementById('loader').style.display = 'none';
         }
 
         // ── REGISTRO ──
         async function doRegister() {
-            const rut = document.getElementById('reg-rut').value.trim();
+            const rut    = document.getElementById('reg-rut').value.trim();
             const nombre = document.getElementById('reg-nombre').value.trim();
-            const pass = document.getElementById('reg-pass').value;
-            const pass2 = document.getElementById('reg-pass2').value;
+            const pass   = document.getElementById('reg-pass').value;
+            const pass2  = document.getElementById('reg-pass2').value;
             hideMsg('reg-error'); hideMsg('reg-success');
-            if (!rut || !nombre || !pass || !pass2) { showMsg('reg-error', 'Completa todos los campos.', 'error'); return; }
-            if (!validateRUT(rut)) { showMsg('reg-error', 'RUT inválido. Verifica el número y dígito verificador.', 'error'); return; }
-            if (pass.length < 6) { showMsg('reg-error', 'La contraseña debe tener al menos 6 caracteres.', 'error'); return; }
-            if (pass !== pass2) { showMsg('reg-error', 'Las contraseñas no coinciden.', 'error'); return; }
+            if (!rut||!nombre||!pass||!pass2) { showMsg('reg-error','Completa todos los campos.','error'); return; }
+            if (!validateRUT(rut)) { showMsg('reg-error','RUT inválido. Verifica el número y dígito verificador.','error'); return; }
+            if (!/^\d{4}$/.test(pass)) { showMsg('reg-error','El PIN debe ser exactamente 4 dígitos numéricos.','error'); return; }
+            if (pass !== pass2) { showMsg('reg-error','Los PINs no coinciden.','error'); return; }
             document.getElementById('loader').style.display = 'flex';
             try {
-                await fetch(WEB_APP_URL, {
-                    method: 'POST', mode: 'no-cors',
-                    body: JSON.stringify({ action: 'register', rut: normalizeRUT(rut), nombre, pass })
-                });
+                await fetch(WEB_APP_URL, { method:'POST', mode:'no-cors', body:JSON.stringify({ action:'register', rut:normalizeRUT(rut), nombre, pass }) });
                 await new Promise(r => setTimeout(r, 1800));
                 const check = await fetch(`${WEB_APP_URL}?action=login&rut=${encodeURIComponent(normalizeRUT(rut))}&pass=${encodeURIComponent(pass)}`);
                 const d = await check.json();
                 if (d.ok) {
-                    showMsg('reg-success', '¡Cuenta creada! Iniciando sesión...', 'success');
+                    showMsg('reg-success','¡Cuenta creada! Iniciando sesión...','success');
                     setTimeout(() => {
                         currentUser = { rut: normalizeRUT(rut), nombre: d.nombre };
                         sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
                         document.getElementById('login-screen').style.display = 'none';
                         fetchFromGoogle();
                     }, 1200);
-                } else {
-                    showMsg('reg-error', 'Error al crear la cuenta. El RUT ya puede estar registrado.', 'error');
-                }
-            } catch { showMsg('reg-error', 'Error de conexión. Intenta de nuevo.', 'error'); }
+                } else { showMsg('reg-error','Error al crear la cuenta. El RUT ya puede estar registrado.','error'); }
+            } catch { showMsg('reg-error','Error de conexión. Intenta de nuevo.','error'); }
+            document.getElementById('loader').style.display = 'none';
+        }
+
+        // ── RECUPERAR PIN ──
+        async function checkRutForReset() {
+            const rut = document.getElementById('reset-rut').value.trim();
+            hideMsg('reset-error');
+            if (!rut) { showMsg('reset-error','Ingresa tu RUT.','error'); return; }
+            if (!validateRUT(rut)) { showMsg('reset-error','RUT inválido.','error'); return; }
+            document.getElementById('loader').style.display = 'flex';
+            try {
+                const res = await fetch(`${WEB_APP_URL}?action=checkRut&rut=${encodeURIComponent(normalizeRUT(rut))}`);
+                const d = await res.json();
+                if (d.ok) {
+                    document.getElementById('reset-step1').style.display = 'none';
+                    document.getElementById('reset-step2').style.display = 'block';
+                    document.getElementById('reset-welcome').innerText = `Hola, ${d.nombre}. Elige tu nuevo PIN.`;
+                } else { showMsg('reset-error','RUT no registrado en el sistema.','error'); }
+            } catch { showMsg('reset-error','Error de conexión.','error'); }
+            document.getElementById('loader').style.display = 'none';
+        }
+
+        async function doResetPass() {
+            const rut   = normalizeRUT(document.getElementById('reset-rut').value.trim());
+            const pass  = document.getElementById('reset-newpass').value;
+            const pass2 = document.getElementById('reset-newpass2').value;
+            hideMsg('reset-error2');
+            if (!/^\d{4}$/.test(pass)) { showMsg('reset-error2','El PIN debe ser exactamente 4 dígitos.','error'); return; }
+            if (pass !== pass2) { showMsg('reset-error2','Los PINs no coinciden.','error'); return; }
+            document.getElementById('loader').style.display = 'flex';
+            try {
+                const res = await fetch(`${WEB_APP_URL}?action=resetPass&rut=${encodeURIComponent(rut)}&newPass=${encodeURIComponent(pass)}`);
+                const d = await res.json();
+                if (d.ok) {
+                    const remembered = localStorage.getItem('rememberedUser');
+                    if (remembered) {
+                        document.getElementById('box-full').style.display = 'none';
+                        document.getElementById('box-quick').style.display = 'block';
+                        document.getElementById('quick-pin').value = ''; updateQuickDots();
+                        showMsg('quick-error','¡PIN actualizado! Ingresa tu nuevo PIN.','success');
+                    } else {
+                        showView('login');
+                        showMsg('login-error','¡PIN actualizado! Ya puedes ingresar.','success');
+                    }
+                } else { showMsg('reset-error2','Error al actualizar el PIN.','error'); }
+            } catch { showMsg('reset-error2','Error de conexión.','error'); }
             document.getElementById('loader').style.display = 'none';
         }
 
@@ -422,31 +601,56 @@
                 currentUser = null;
                 txs = []; debts = []; archives = []; catsInc = []; catsExp = []; catsSav = [];
                 loginAttempts = 0;
-                document.getElementById('login-pass').value = '';
-                document.getElementById('login-rut').value = '';
                 document.getElementById('login-screen').style.display = 'flex';
+                const remembered = localStorage.getItem('rememberedUser');
+                if (remembered) {
+                    document.getElementById('box-full').style.display = 'none';
+                    document.getElementById('box-quick').style.display = 'block';
+                    document.getElementById('quick-nombre').innerText = `Hola, ${JSON.parse(remembered).nombre}`;
+                    document.getElementById('quick-pin').value = ''; updateQuickDots();
+                    hideMsg('quick-error');
+                    setTimeout(() => document.getElementById('quick-pin').focus(), 300);
+                } else {
+                    document.getElementById('box-quick').style.display = 'none';
+                    document.getElementById('box-full').style.display = 'block';
+                    showView('login');
+                }
             }
         }
 
-        // ── AUTO LOGIN ──
-        const savedUser = sessionStorage.getItem('currentUser');
-        if (savedUser) {
-            currentUser = JSON.parse(savedUser);
-            document.getElementById('login-screen').style.display = 'none';
-            fetchFromGoogle();
-        }
+        // ── AUTO LOGIN / RECORDADO ──
+        (function initAuth() {
+            const session = sessionStorage.getItem('currentUser');
+            if (session) {
+                currentUser = JSON.parse(session);
+                document.getElementById('login-screen').style.display = 'none';
+                fetchFromGoogle(); return;
+            }
+            const remembered = localStorage.getItem('rememberedUser');
+            if (remembered) {
+                const user = JSON.parse(remembered);
+                document.getElementById('box-quick').style.display = 'block';
+                document.getElementById('box-full').style.display = 'none';
+                document.getElementById('quick-nombre').innerText = `Hola, ${user.nombre}`;
+                setTimeout(() => document.getElementById('quick-pin').focus(), 350);
+            }
+        })();
 
         // ── TECLA ENTER ──
-        document.getElementById('login-rut').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('login-pass').focus(); });
-        document.getElementById('login-pass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
-        document.getElementById('reg-rut').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('reg-nombre').focus(); });
-        document.getElementById('reg-nombre').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('reg-pass').focus(); });
-        document.getElementById('reg-pass').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('reg-pass2').focus(); });
-        document.getElementById('reg-pass2').addEventListener('keydown', e => { if (e.key === 'Enter') doRegister(); });
+        document.getElementById('login-rut').addEventListener('keydown', e => { if (e.key==='Enter') document.getElementById('login-pass').focus(); });
+        document.getElementById('login-pass').addEventListener('keydown', e => { if (e.key==='Enter') doLogin(); });
+        document.getElementById('reg-rut').addEventListener('keydown', e => { if (e.key==='Enter') document.getElementById('reg-nombre').focus(); });
+        document.getElementById('reg-nombre').addEventListener('keydown', e => { if (e.key==='Enter') document.getElementById('reg-pass').focus(); });
+        document.getElementById('reg-pass').addEventListener('keydown', e => { if (e.key==='Enter') document.getElementById('reg-pass2').focus(); });
+        document.getElementById('reg-pass2').addEventListener('keydown', e => { if (e.key==='Enter') doRegister(); });
+        document.getElementById('reset-rut').addEventListener('keydown', e => { if (e.key==='Enter') checkRutForReset(); });
+        document.getElementById('reset-newpass').addEventListener('keydown', e => { if (e.key==='Enter') document.getElementById('reset-newpass2').focus(); });
+        document.getElementById('reset-newpass2').addEventListener('keydown', e => { if (e.key==='Enter') doResetPass(); });
 
         // ── FORMATO RUT AL ESCRIBIR ──
-        document.getElementById('login-rut').addEventListener('input', formatRUTInput);
-        document.getElementById('reg-rut').addEventListener('input', formatRUTInput);
+        ['login-rut','reg-rut','reset-rut'].forEach(id =>
+            document.getElementById(id).addEventListener('input', formatRUTInput)
+        );
 
         // ── API ──
         async function fetchFromGoogle() {
