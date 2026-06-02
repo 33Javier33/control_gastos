@@ -67,9 +67,20 @@
         .auth-link:active { color: white; }
 
         /* ── LOADER ── */
-        #loader { position: fixed; inset: 0; background: rgba(255,255,255,0.92); z-index: 500; display: none; flex-direction: column; align-items: center; justify-content: center; }
-        .spinner { width: 40px; height: 40px; border: 4px solid #ddd; border-top-color: var(--p); border-radius: 50%; animation: spin 1s linear infinite; }
+        #loader { position: fixed; inset: 0; background: rgba(20,10,50,0.72); z-index: 1100; display: none; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+        #loader-msg { color: white; margin-top: 14px; font-size: 0.95rem; font-weight: 600; opacity: 0.92; }
+        .spinner { width: 42px; height: 42px; border: 4px solid rgba(255,255,255,0.25); border-top-color: white; border-radius: 50%; animation: spin 0.85s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ── BTN SPINNER (inline en botones auth) ── */
+        .btn-spin { display: inline-block; width: 14px; height: 14px; border: 2.5px solid rgba(255,255,255,0.35); border-top-color: white; border-radius: 50%; animation: spin 0.75s linear infinite; vertical-align: middle; margin-right: 6px; }
+        .btn-auth:disabled, .btn-full:disabled { opacity: 0.65; cursor: not-allowed; }
+
+        /* ── TOAST ── */
+        #toast { position: fixed; bottom: calc(78px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%) translateY(12px); background: #1e293b; color: white; padding: 12px 22px; border-radius: 40px; font-size: 0.88rem; font-weight: 600; z-index: 2000; opacity: 0; transition: opacity 0.25s ease, transform 0.25s ease; white-space: nowrap; pointer-events: none; display: flex; align-items: center; gap: 8px; }
+        #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+        #toast.ok { background: #059669; }
+        #toast.err { background: #dc2626; }
 
         /* ── HEADER ── */
         header { background: var(--p); color: white; padding: calc(env(safe-area-inset-top, 0px) + 14px) 20px 45px; text-align: center; border-radius: 0 0 30px 30px; position: relative; }
@@ -166,7 +177,7 @@
                 </div>
                 <div class="lockout-bar" id="lockout-bar"><div class="lockout-fill" id="lockout-fill"></div></div>
                 <div class="auth-msg" id="login-error"></div>
-                <button class="btn-auth" onclick="doLogin()"><i class="fa-solid fa-right-to-bracket"></i> &nbsp;Ingresar</button>
+                <button id="btn-login" class="btn-auth" onclick="doLogin()"><i class="fa-solid fa-right-to-bracket"></i> &nbsp;Ingresar</button>
                 <div style="text-align:center; margin-top:12px;">
                     <button class="auth-link" onclick="showView('reset')">¿Olvidaste tu PIN?</button>
                 </div>
@@ -180,7 +191,7 @@
                 <input class="auth-input" type="tel" id="reg-pass2" placeholder="Confirmar PIN" inputmode="numeric" maxlength="4" pattern="[0-9]*" autocomplete="off">
                 <div class="auth-msg" id="reg-error"></div>
                 <div class="auth-msg" id="reg-success"></div>
-                <button class="btn-auth" onclick="doRegister()"><i class="fa-solid fa-user-plus"></i> &nbsp;Crear Cuenta</button>
+                <button id="btn-register" class="btn-auth" onclick="doRegister()"><i class="fa-solid fa-user-plus"></i> &nbsp;Crear Cuenta</button>
             </div>
 
             <!-- RECUPERAR PIN -->
@@ -190,7 +201,7 @@
                     <p style="font-size:0.86rem; opacity:0.8; margin:0 0 14px; text-align:left; line-height:1.4;">Ingresa tu RUT para verificar tu identidad y establecer un nuevo PIN.</p>
                     <input class="auth-input" type="text" id="reset-rut" placeholder="RUT (ej: 12.345.678-9)" inputmode="numeric">
                     <div class="auth-msg" id="reset-error"></div>
-                    <button class="btn-auth" onclick="checkRutForReset()">Continuar →</button>
+                    <button id="btn-reset1" class="btn-auth" onclick="checkRutForReset()">Continuar →</button>
                 </div>
                 <!-- Paso 2: nuevo PIN -->
                 <div id="reset-step2" style="display:none">
@@ -198,7 +209,7 @@
                     <input class="auth-input" type="tel" id="reset-newpass" placeholder="Nuevo PIN (4 dígitos)" inputmode="numeric" maxlength="4" pattern="[0-9]*" autocomplete="off">
                     <input class="auth-input" type="tel" id="reset-newpass2" placeholder="Confirmar PIN" inputmode="numeric" maxlength="4" pattern="[0-9]*" autocomplete="off">
                     <div class="auth-msg" id="reset-error2"></div>
-                    <button class="btn-auth" onclick="doResetPass()" style="background:#10b981;">Guardar nuevo PIN</button>
+                    <button id="btn-reset2" class="btn-auth" onclick="doResetPass()" style="background:#10b981;">Guardar nuevo PIN</button>
                 </div>
                 <div style="text-align:center; margin-top:12px;">
                     <button class="auth-link" onclick="showView('login')">← Volver al inicio</button>
@@ -207,7 +218,8 @@
         </div>
     </div>
 
-    <div id="loader"><div class="spinner"></div><p>Sincronizando...</p></div>
+    <div id="loader"><div class="spinner"></div><p id="loader-msg">Cargando...</p></div>
+    <div id="toast"></div>
 
     <header>
         <button class="nav-btn" style="left:15px" onclick="openModal('modal-history')"><i class="fa-solid fa-clock-rotate-left"></i></button>
@@ -403,6 +415,30 @@
         }
         function hideMsg(id) { document.getElementById(id).style.display = 'none'; }
 
+        // ── LOADER Y TOAST ──
+        function showLoader(msg) {
+            document.getElementById('loader-msg').textContent = msg || 'Cargando...';
+            document.getElementById('loader').style.display = 'flex';
+        }
+        function hideLoader() { document.getElementById('loader').style.display = 'none'; }
+
+        let toastTimer;
+        function showToast(msg, type) {
+            clearTimeout(toastTimer);
+            const t = document.getElementById('toast');
+            t.innerHTML = msg;
+            t.className = 'show' + (type ? ' ' + type : '');
+            toastTimer = setTimeout(() => { t.className = ''; }, 2800);
+        }
+
+        function setBtnLoading(id, loading, origHTML) {
+            const btn = document.getElementById(id);
+            if (!btn) return;
+            btn.disabled = loading;
+            if (loading) { btn.dataset.orig = btn.innerHTML; btn.innerHTML = '<span class="btn-spin"></span> Cargando...'; }
+            else btn.innerHTML = btn.dataset.orig || origHTML;
+        }
+
         // ── BLOQUEO POR INTENTOS ──
         function startLockout(barPrefix, errId) {
             clearTimeout(lockoutTimer);
@@ -440,7 +476,9 @@
             const pin = document.getElementById('quick-pin').value;
             const remembered = JSON.parse(localStorage.getItem('rememberedUser') || '{}');
             if (!remembered.rut) return;
-            document.getElementById('loader').style.display = 'flex';
+            const pinInput = document.getElementById('quick-pin');
+            pinInput.disabled = true;
+            showMsg('quick-error', '⏳ Verificando...', '');
             try {
                 const res = await fetch(`${WEB_APP_URL}?action=login&rut=${encodeURIComponent(remembered.rut)}&pass=${encodeURIComponent(pin)}`);
                 const d = await res.json();
@@ -448,11 +486,15 @@
                     loginAttempts = 0;
                     currentUser = { rut: remembered.rut, nombre: d.nombre };
                     sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
-                    document.getElementById('login-screen').style.display = 'none';
-                    fetchFromGoogle();
+                    showMsg('quick-error', '✓ Accediendo...', 'success');
+                    setTimeout(() => {
+                        document.getElementById('login-screen').style.display = 'none';
+                        fetchFromGoogle();
+                    }, 350);
                 } else {
                     loginAttempts++;
-                    document.getElementById('quick-pin').value = ''; updateQuickDots();
+                    pinInput.disabled = false;
+                    pinInput.value = ''; updateQuickDots();
                     const dots = document.getElementById('quick-dots');
                     dots.classList.add('shake');
                     setTimeout(() => dots.classList.remove('shake'), 400);
@@ -460,8 +502,10 @@
                     if (loginAttempts >= 3) startLockout('qlockout', 'quick-error');
                     else showMsg('quick-error', `PIN incorrecto. ${left} intento${left!==1?'s':''} restante${left!==1?'s':''}.`, 'error');
                 }
-            } catch { showMsg('quick-error', 'Error de conexión.', 'error'); }
-            document.getElementById('loader').style.display = 'none';
+            } catch {
+                pinInput.disabled = false;
+                showMsg('quick-error', 'Error de conexión.', 'error');
+            }
         }
 
         function forgetDevice() {
@@ -495,7 +539,7 @@
             if (!validateRUT(rut)) { showMsg('login-error','RUT inválido. Verifica el dígito verificador.','error'); return; }
             if (!/^\d{4}$/.test(pass)) { showMsg('login-error','El PIN debe ser exactamente 4 dígitos.','error'); return; }
             hideMsg('login-error');
-            document.getElementById('loader').style.display = 'flex';
+            setBtnLoading('btn-login', true);
             try {
                 const res = await fetch(`${WEB_APP_URL}?action=login&rut=${encodeURIComponent(normalizeRUT(rut))}&pass=${encodeURIComponent(pass)}`);
                 const d = await res.json();
@@ -506,16 +550,22 @@
                     if (document.getElementById('remember-me').checked) {
                         localStorage.setItem('rememberedUser', JSON.stringify({ rut: currentUser.rut, nombre: currentUser.nombre }));
                     }
-                    document.getElementById('login-screen').style.display = 'none';
-                    fetchFromGoogle();
+                    showMsg('login-error', '✓ Ingresando...', 'success');
+                    setTimeout(() => {
+                        document.getElementById('login-screen').style.display = 'none';
+                        fetchFromGoogle();
+                    }, 350);
                 } else {
                     loginAttempts++;
+                    setBtnLoading('btn-login', false);
                     const left = 3 - loginAttempts;
                     if (loginAttempts >= 3) startLockout('lockout','login-error');
                     else showMsg('login-error', `RUT o PIN incorrectos. ${left} intento${left!==1?'s':''} restante${left!==1?'s':''}.`, 'error');
                 }
-            } catch { showMsg('login-error','Error de conexión. Intenta de nuevo.','error'); }
-            document.getElementById('loader').style.display = 'none';
+            } catch {
+                setBtnLoading('btn-login', false);
+                showMsg('login-error','Error de conexión. Intenta de nuevo.','error');
+            }
         }
 
         // ── REGISTRO ──
@@ -529,23 +579,31 @@
             if (!validateRUT(rut)) { showMsg('reg-error','RUT inválido. Verifica el número y dígito verificador.','error'); return; }
             if (!/^\d{4}$/.test(pass)) { showMsg('reg-error','El PIN debe ser exactamente 4 dígitos numéricos.','error'); return; }
             if (pass !== pass2) { showMsg('reg-error','Los PINs no coinciden.','error'); return; }
-            document.getElementById('loader').style.display = 'flex';
+            setBtnLoading('btn-register', true);
             try {
                 await fetch(WEB_APP_URL, { method:'POST', mode:'no-cors', body:JSON.stringify({ action:'register', rut:normalizeRUT(rut), nombre, pass }) });
                 await new Promise(r => setTimeout(r, 1800));
                 const check = await fetch(`${WEB_APP_URL}?action=login&rut=${encodeURIComponent(normalizeRUT(rut))}&pass=${encodeURIComponent(pass)}`);
                 const d = await check.json();
                 if (d.ok) {
-                    showMsg('reg-success','¡Cuenta creada! Iniciando sesión...','success');
+                    showMsg('reg-success','✓ ¡Cuenta creada! Iniciando sesión...','success');
                     setTimeout(() => {
                         currentUser = { rut: normalizeRUT(rut), nombre: d.nombre };
                         sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+                        if (document.getElementById('remember-me').checked) {
+                            localStorage.setItem('rememberedUser', JSON.stringify({ rut: currentUser.rut, nombre: currentUser.nombre }));
+                        }
                         document.getElementById('login-screen').style.display = 'none';
                         fetchFromGoogle();
                     }, 1200);
-                } else { showMsg('reg-error','Error al crear la cuenta. El RUT ya puede estar registrado.','error'); }
-            } catch { showMsg('reg-error','Error de conexión. Intenta de nuevo.','error'); }
-            document.getElementById('loader').style.display = 'none';
+                } else {
+                    setBtnLoading('btn-register', false);
+                    showMsg('reg-error','Error al crear la cuenta. El RUT ya puede estar registrado.','error');
+                }
+            } catch {
+                setBtnLoading('btn-register', false);
+                showMsg('reg-error','Error de conexión. Intenta de nuevo.','error');
+            }
         }
 
         // ── RECUPERAR PIN ──
@@ -554,7 +612,7 @@
             hideMsg('reset-error');
             if (!rut) { showMsg('reset-error','Ingresa tu RUT.','error'); return; }
             if (!validateRUT(rut)) { showMsg('reset-error','RUT inválido.','error'); return; }
-            document.getElementById('loader').style.display = 'flex';
+            setBtnLoading('btn-reset1', true);
             try {
                 const res = await fetch(`${WEB_APP_URL}?action=checkRut&rut=${encodeURIComponent(normalizeRUT(rut))}`);
                 const d = await res.json();
@@ -562,9 +620,14 @@
                     document.getElementById('reset-step1').style.display = 'none';
                     document.getElementById('reset-step2').style.display = 'block';
                     document.getElementById('reset-welcome').innerText = `Hola, ${d.nombre}. Elige tu nuevo PIN.`;
-                } else { showMsg('reset-error','RUT no registrado en el sistema.','error'); }
-            } catch { showMsg('reset-error','Error de conexión.','error'); }
-            document.getElementById('loader').style.display = 'none';
+                } else {
+                    setBtnLoading('btn-reset1', false);
+                    showMsg('reset-error','RUT no registrado en el sistema.','error');
+                }
+            } catch {
+                setBtnLoading('btn-reset1', false);
+                showMsg('reset-error','Error de conexión.','error');
+            }
         }
 
         async function doResetPass() {
@@ -574,7 +637,7 @@
             hideMsg('reset-error2');
             if (!/^\d{4}$/.test(pass)) { showMsg('reset-error2','El PIN debe ser exactamente 4 dígitos.','error'); return; }
             if (pass !== pass2) { showMsg('reset-error2','Los PINs no coinciden.','error'); return; }
-            document.getElementById('loader').style.display = 'flex';
+            setBtnLoading('btn-reset2', true);
             try {
                 const res = await fetch(`${WEB_APP_URL}?action=resetPass&rut=${encodeURIComponent(rut)}&newPass=${encodeURIComponent(pass)}`);
                 const d = await res.json();
@@ -584,14 +647,19 @@
                         document.getElementById('box-full').style.display = 'none';
                         document.getElementById('box-quick').style.display = 'block';
                         document.getElementById('quick-pin').value = ''; updateQuickDots();
-                        showMsg('quick-error','¡PIN actualizado! Ingresa tu nuevo PIN.','success');
+                        showMsg('quick-error','✓ PIN actualizado. Ingresa tu nuevo PIN.','success');
                     } else {
                         showView('login');
-                        showMsg('login-error','¡PIN actualizado! Ya puedes ingresar.','success');
+                        showMsg('login-error','✓ PIN actualizado. Ya puedes ingresar.','success');
                     }
-                } else { showMsg('reset-error2','Error al actualizar el PIN.','error'); }
-            } catch { showMsg('reset-error2','Error de conexión.','error'); }
-            document.getElementById('loader').style.display = 'none';
+                } else {
+                    setBtnLoading('btn-reset2', false);
+                    showMsg('reset-error2','Error al actualizar el PIN.','error');
+                }
+            } catch {
+                setBtnLoading('btn-reset2', false);
+                showMsg('reset-error2','Error de conexión.','error');
+            }
         }
 
         // ── LOGOUT ──
@@ -655,7 +723,7 @@
         // ── API ──
         async function fetchFromGoogle() {
             if (!currentUser) return;
-            document.getElementById('loader').style.display = 'flex';
+            showLoader('Cargando tus datos...');
             document.getElementById('header-user').innerText = `Hola, ${currentUser.nombre}`;
             try {
                 const res = await fetch(`${WEB_APP_URL}?action=data&rut=${encodeURIComponent(currentUser.rut)}`);
@@ -666,16 +734,22 @@
                 catsInc = d.catsInc || []; catsExp = d.catsExp || []; catsSav = d.catsSav || ['Emergencia', 'Viajes'];
                 updateUI();
             } catch (e) { console.error(e); }
-            document.getElementById('loader').style.display = 'none';
+            hideLoader();
         }
 
         async function sync() {
             if (!currentUser) return;
-            document.getElementById('loader').style.display = 'flex';
+            showToast('<span class="btn-spin" style="border-top-color:white;margin:0 4px 0 0;"></span> Guardando...', '');
             const payload = { action: 'save', rut: currentUser.rut, data: { txs, debts, archives, catsInc, catsExp, catsSav } };
-            try { await fetch(WEB_APP_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) }); setTimeout(updateUI, 800); }
-            catch { alert('Error al sincronizar'); }
-            document.getElementById('loader').style.display = 'none';
+            try {
+                await fetch(WEB_APP_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
+                setTimeout(() => {
+                    updateUI();
+                    showToast('✓ Guardado', 'ok');
+                }, 800);
+            } catch {
+                showToast('⚠ Error al guardar', 'err');
+            }
         }
 
         // ── UI PRINCIPAL ──
