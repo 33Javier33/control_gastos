@@ -102,8 +102,14 @@
         .chip.active { background: var(--p); color: white; border-color: var(--p); }
 
         /* ── BANNERS ── */
-        #category-total-banner { margin: 0 20px 10px; padding: 15px; background: white; border-radius: 15px; display: none; flex-direction: column; border: 1.5px dashed var(--p); }
-        .banner-row { display: flex; justify-content: space-between; align-items: center; margin: 3px 0; font-size: 0.85rem; }
+        #category-total-banner { margin: 0 20px 10px; padding: 16px 18px; background: white; border-radius: 18px; display: none; flex-direction: column; gap: 6px; box-shadow: 0 2px 12px rgba(79,70,229,0.10); border: 1.5px solid #e0e7ff; }
+        .banner-main { display: flex; justify-content: space-between; align-items: center; }
+        .banner-label { font-weight: 700; font-size: 1rem; color: #1e293b; }
+        .banner-total { font-weight: 800; font-size: 1.35rem; }
+        .banner-meta { display: flex; gap: 14px; flex-wrap: wrap; }
+        .banner-meta-item { font-size: 0.78rem; color: #64748b; display: flex; flex-direction: column; gap: 1px; }
+        .banner-meta-item b { font-size: 0.88rem; color: #1e293b; font-weight: 700; }
+        .banner-count { font-size: 0.72rem; color: #94a3b8; margin-top: 2px; }
         #archive-banner { display: none; align-items: center; justify-content: space-between; margin: 0 20px 10px; padding: 12px 15px; background: #fef3c7; border-radius: 15px; border: 1.5px solid #f59e0b; }
 
         /* ── FEED ── */
@@ -240,13 +246,12 @@
     <div id="filter-container" class="category-bar"></div>
 
     <div id="category-total-banner">
-        <div class="banner-row" style="border-bottom: 1px solid #eee; padding-bottom: 5px;">
-            <span id="cat-label" style="font-weight:bold">Categoría</span>
-            <span id="cat-remaining">$0</span>
+        <div class="banner-main">
+            <span class="banner-label" id="cat-label"></span>
+            <span class="banner-total" id="cat-total"></span>
         </div>
-        <div class="banner-row"><span style="color:#64748b">Ingresado:</span> <span id="cat-earned">$0</span></div>
-        <div class="banner-row"><span style="color:#64748b">Gastado:</span> <span id="cat-spent">$0</span></div>
-        <div class="banner-row"><span style="color:#64748b">Ahorrado:</span> <span id="cat-saved-from">$0</span></div>
+        <div class="banner-meta" id="cat-meta"></div>
+        <div class="banner-count" id="cat-count"></div>
     </div>
 
     <div id="archive-banner">
@@ -790,25 +795,33 @@
             if (filterCat !== 'all') {
                 banner.style.display = 'flex';
                 document.getElementById('cat-label').innerText = filterCat;
-                const earned = data.filter(t => t.amount > 0 && t.cat === filterCat).reduce((a,b) => a+b.amount, 0);
-                const spent  = Math.abs(data.filter(t => t.amount < 0 && !t.isSaving && t.source === filterCat).reduce((a,b) => a+b.amount, 0));
-                const saved  = Math.abs(data.filter(t => t.isSaving && t.source === filterCat).reduce((a,b) => a+b.amount, 0));
-                if (filterType === 'plus') {
-                    document.getElementById('cat-earned').innerText = `$${fmt(earned)}`;
-                    document.getElementById('cat-spent').innerText  = `-$${fmt(spent)}`;
-                    document.getElementById('cat-saved-from').innerText = `-$${fmt(saved)}`;
-                    const rem = earned - spent - saved;
-                    document.getElementById('cat-remaining').innerText   = `$${fmt(rem)}`;
-                    document.getElementById('cat-remaining').className   = rem >= 0 ? 'plus-txt' : 'minus-txt';
-                    banner.querySelectorAll('.banner-row').forEach(r => r.style.display='flex');
+                const catTotal   = document.getElementById('cat-total');
+                const catMeta    = document.getElementById('cat-meta');
+                const catCount   = document.getElementById('cat-count');
+                const n          = filtered.length;
+                catCount.innerText = `${n} movimiento${n !== 1 ? 's' : ''}`;
+
+                if (filterType === 'minus') {
+                    const total = filtered.reduce((a,b) => a + Math.abs(b.amount), 0);
+                    catTotal.innerText = `-$${fmt(total)}`;
+                    catTotal.className = 'banner-total minus-txt';
+                    catMeta.innerHTML = `<div class="banner-meta-item"><span>Promedio por mov.</span><b>$${fmt(n ? Math.round(total/n) : 0)}</b></div>`;
+                } else if (filterType === 'plus') {
+                    const earned = filtered.filter(t => t.amount > 0).reduce((a,b) => a+b.amount, 0);
+                    const spent  = Math.abs(data.filter(t => t.amount < 0 && !t.isSaving && t.source === filterCat).reduce((a,b) => a+b.amount, 0));
+                    const saved  = Math.abs(data.filter(t => t.isSaving && t.source === filterCat).reduce((a,b) => a+b.amount, 0));
+                    const rem    = earned - spent - saved;
+                    catTotal.innerText = `$${fmt(rem)}`;
+                    catTotal.className = 'banner-total ' + (rem >= 0 ? 'plus-txt' : 'minus-txt');
+                    catMeta.innerHTML  = `
+                        <div class="banner-meta-item"><span>Ingresado</span><b class="plus-txt">$${fmt(earned)}</b></div>
+                        <div class="banner-meta-item"><span>Gastado</span><b class="minus-txt">-$${fmt(spent)}</b></div>
+                        <div class="banner-meta-item"><span>Ahorrado</span><b class="save-txt">-$${fmt(saved)}</b></div>`;
                 } else if (filterType === 'save') {
-                    const totalInHucha = data.filter(t => t.isSaving && t.cat === filterCat).reduce((a,b) => a+Math.abs(b.amount), 0);
-                    document.getElementById('cat-remaining').innerText = `$${fmt(totalInHucha)}`;
-                    document.getElementById('cat-remaining').className = 'save-txt';
-                    banner.querySelectorAll('.banner-row:not(:first-child)').forEach(r => r.style.display='none');
-                } else {
-                    banner.querySelectorAll('.banner-row').forEach(r => r.style.display='none');
-                    banner.querySelector('.banner-row').style.display='flex';
+                    const total = filtered.reduce((a,b) => a + Math.abs(b.amount), 0);
+                    catTotal.innerText = `$${fmt(total)}`;
+                    catTotal.className = 'banner-total save-txt';
+                    catMeta.innerHTML = `<div class="banner-meta-item"><span>Promedio por mov.</span><b>$${fmt(n ? Math.round(total/n) : 0)}</b></div>`;
                 }
             } else { banner.style.display = 'none'; }
 
