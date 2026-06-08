@@ -1,4 +1,4 @@
-const CACHE_NAME = 'control-financiero-v4';
+const CACHE_NAME = 'control-financiero-v5';
 
 const STATIC_ASSETS = [
   '/manifest.json',
@@ -30,8 +30,8 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
 
-  // Google Apps Script: siempre red
-  if (url.hostname.includes('script.google.com')) {
+  // API backend: siempre red
+  if (url.hostname.includes('supabase.co')) {
     event.respondWith(
       fetch(event.request).catch(() =>
         new Response(JSON.stringify({ error: 'Sin conexión' }), {
