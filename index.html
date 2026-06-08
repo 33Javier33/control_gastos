@@ -494,7 +494,7 @@
 
         async function dec(value) {
             const s = String(value ?? '');
-            if (!s.startsWith('enc:')) return value;
+            if (!s.startsWith('enc:')) return s;  // siempre retorna string
             const key = await loadKey();
             if (!key) return value;
             try {
@@ -1091,13 +1091,14 @@
                 list.appendChild(div);
             });
 
-            const ti = data.filter(t => t.amount > 0).reduce((a,b) => a+b.amount, 0);
-            const te = Math.abs(data.filter(t => t.amount < 0 && !t.isSaving).reduce((a,b) => a+b.amount, 0));
-            const ts = data.filter(t => t.isSaving).reduce((a,b) => a+Math.abs(b.amount), 0);
+            const n = v => Number(v) || 0;
+            const ti = data.filter(t => n(t.amount) > 0).reduce((a,b) => a+n(b.amount), 0);
+            const te = Math.abs(data.filter(t => n(t.amount) < 0 && !t.isSaving).reduce((a,b) => a+n(b.amount), 0));
+            const ts = data.filter(t => t.isSaving).reduce((a,b) => a+Math.abs(n(b.amount)), 0);
             document.getElementById('balance-display').innerText = `$${fmt(ti-te-ts)}`;
             document.getElementById('total-inc').innerText = `+$${fmt(ti)}`;
             document.getElementById('total-exp').innerText = `-$${fmt(te)}`;
-            document.getElementById('total-deb').innerText = `$${fmt(debts.reduce((a,b) => a+b.amount, 0))}`;
+            document.getElementById('total-deb').innerText = `$${fmt(debts.reduce((a,b) => a+n(b.amount), 0))}`;
             document.getElementById('total-sav').innerText = `$${fmt(ts)}`;
             renderCatAdmin(); renderArchives();
         }

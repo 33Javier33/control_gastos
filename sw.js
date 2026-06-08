@@ -1,4 +1,4 @@
-const CACHE_NAME = 'control-financiero-v5';
+const CACHE_NAME = 'control-financiero-v6';
 
 const STATIC_ASSETS = [
   '/manifest.json',
