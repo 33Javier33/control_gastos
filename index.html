@@ -956,6 +956,12 @@
             try {
                 const res = await fetch(`${WEB_APP_URL}?action=data&rut=${encodeURIComponent(currentUser.rut)}`);
                 const d = await res.json();
+                const isEncVal = v => !v || String(v).startsWith('enc:');
+                const hasKey = !!(await loadKey());
+                const needsEncrypt = hasKey && (
+                    (d.txs  || []).some(t => !isEncVal(t.amount) || !isEncVal(t.text)) ||
+                    (d.debts|| []).some(t => !isEncVal(t.amount) || !isEncVal(t.text))
+                );
                 txs = await Promise.all((d.txs || []).map(async t => ({
                     ...t,
                     date:   parseDate(t.date),
@@ -973,6 +979,7 @@
                 archives = (d.archives || []).map(a => ({...a, data: (a.data || []).map(t => ({...t, date: parseDate(t.date)}))}));
                 catsInc = d.catsInc || []; catsExp = d.catsExp || []; catsSav = d.catsSav || ['Emergencia', 'Viajes'];
                 updateUI();
+                if (needsEncrypt) sync();
             } catch (e) { console.error(e); }
             hideLoader();
         }
