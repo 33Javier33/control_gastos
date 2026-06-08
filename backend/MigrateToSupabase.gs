@@ -13,7 +13,7 @@
  */
 
 function migrateToSupabase() {
-  const API_URL         = 'https://lpulmjzboogixbdxxayo.supabase.co/functions/v1/api';
+  const API_URL          = 'https://lpulmjzboogixbdxxayo.supabase.co/functions/v1/api';
   const MIGRATION_SECRET = 'mig_Xq7Kp3Nz2Wv9Rm4Jb6Ys';
 
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -70,6 +70,11 @@ function migrateToSupabase() {
         catch (_) { return { id: String(r[1]), period: String(r[2]), data: {} }; }
       });
 
+    Logger.log('→ Enviando ' + rut + ' (' + nombre + '): '
+      + txs.length + ' movimientos, '
+      + userDebts.length + ' deudas, '
+      + (catsInc.length + catsExp.length + catsSav.length) + ' categorías');
+
     const payload = {
       action: 'migrate',
       secret: MIGRATION_SECRET,
@@ -89,7 +94,14 @@ function migrateToSupabase() {
       const text = response.getContentText();
 
       if (code === 200) {
-        Logger.log('✓ ' + rut + ' (' + nombre + ') — ' + txs.length + ' movimientos, ' + userDebts.length + ' deudas');
+        let detail = '';
+        try {
+          const resp = JSON.parse(text);
+          if (resp.counts) {
+            detail = ' [server: ' + resp.counts.txs + ' tx, ' + resp.counts.debts + ' deudas, ' + resp.counts.cats + ' cats]';
+          }
+        } catch (_) {}
+        Logger.log('✓ ' + rut + ' OK' + detail);
         ok++;
       } else {
         Logger.log('✗ ' + rut + ' ERROR ' + code + ': ' + text);
@@ -104,11 +116,4 @@ function migrateToSupabase() {
   Logger.log('\n══════════════════════════════════');
   Logger.log('RESULTADO: ' + ok + ' migrados, ' + errors + ' errores');
   Logger.log('══════════════════════════════════');
-
-  SpreadsheetApp.getUi().alert(
-    'Migración completada\n\n' +
-    '✓ ' + ok + ' usuarios migrados correctamente\n' +
-    (errors > 0 ? '✗ ' + errors + ' errores (ver Log de Ejecución)\n' : '') +
-    '\nYa puedes usar la app con Supabase.'
-  );
 }
