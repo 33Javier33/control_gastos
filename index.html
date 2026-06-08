@@ -444,6 +444,69 @@
     <script>
         const WEB_APP_URL = "https://lpulmjzboogixbdxxayo.supabase.co/functions/v1/api";
 
+        // ── CIFRADO AES-256-GCM (cliente) ────────────────────────────────────────
+        // La clave se deriva del PIN+RUT del usuario. Supabase solo recibe texto
+        // cifrado ilegible. Ni el admin puede leer los datos financieros.
+        let _cryptoKey = null;
+
+        async function _deriveKey(pin, rut) {
+            const base = await crypto.subtle.importKey(
+                'raw', new TextEncoder().encode(pin + ':' + rut),
+                { name: 'PBKDF2' }, false, ['deriveKey']
+            );
+            return crypto.subtle.deriveKey(
+                { name: 'PBKDF2', salt: new TextEncoder().encode(rut), iterations: 100000, hash: 'SHA-256' },
+                base, { name: 'AES-GCM', length: 256 }, true, ['encrypt', 'decrypt']
+            );
+        }
+
+        async function initKey(pin, rut) {
+            _cryptoKey = await _deriveKey(pin, rut);
+            const raw = await crypto.subtle.exportKey('raw', _cryptoKey);
+            sessionStorage.setItem('_ck', btoa(String.fromCharCode(...new Uint8Array(raw))));
+        }
+
+        async function loadKey() {
+            if (_cryptoKey) return _cryptoKey;
+            const stored = sessionStorage.getItem('_ck');
+            if (!stored) return null;
+            const bytes = Uint8Array.from(atob(stored), c => c.charCodeAt(0));
+            _cryptoKey = await crypto.subtle.importKey('raw', bytes, { name: 'AES-GCM' }, true, ['encrypt', 'decrypt']);
+            return _cryptoKey;
+        }
+
+        function clearKey() {
+            _cryptoKey = null;
+            sessionStorage.removeItem('_ck');
+        }
+
+        async function enc(value) {
+            const key = await loadKey();
+            if (!key) return String(value ?? '');
+            const iv = crypto.getRandomValues(new Uint8Array(12));
+            const ct = await crypto.subtle.encrypt(
+                { name: 'AES-GCM', iv }, key, new TextEncoder().encode(String(value ?? ''))
+            );
+            const buf = new Uint8Array(12 + ct.byteLength);
+            buf.set(iv); buf.set(new Uint8Array(ct), 12);
+            return 'enc:' + btoa(String.fromCharCode(...buf));
+        }
+
+        async function dec(value) {
+            const s = String(value ?? '');
+            if (!s.startsWith('enc:')) return value;
+            const key = await loadKey();
+            if (!key) return value;
+            try {
+                const buf = Uint8Array.from(atob(s.slice(4)), c => c.charCodeAt(0));
+                const plain = await crypto.subtle.decrypt(
+                    { name: 'AES-GCM', iv: buf.slice(0, 12) }, key, buf.slice(12)
+                );
+                return new TextDecoder().decode(plain);
+            } catch { return value; }
+        }
+        // ─────────────────────────────────────────────────────────────────────────
+
         // ── ESTADO GLOBAL ──
         let txs = [], debts = [], archives = [], catsInc = [], catsExp = [], catsSav = [];
         let filterType = 'all', filterCat = 'all', viewingArchive = null, viewingArchivePeriod = null, debtToPay = null;
@@ -596,6 +659,7 @@
                     loginAttempts = 0;
                     currentUser = { rut: remembered.rut, nombre: d.nombre };
                     sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+                    await initKey(pin, remembered.rut);
                     showMsg('quick-error', '✓ Accediendo...', 'success');
                     setTimeout(() => {
                         document.getElementById('login-screen').style.display = 'none';
@@ -619,6 +683,7 @@
         }
 
         function forgetDevice() {
+            clearKey();
             localStorage.removeItem('rememberedUser');
             resetQuickPin();
             document.getElementById('box-quick').style.display = 'none';
@@ -657,6 +722,7 @@
                     loginAttempts = 0;
                     currentUser = { rut: normalizeRUT(rut), nombre: d.nombre };
                     sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+                    await initKey(pass, normalizeRUT(rut));
                     if (document.getElementById('remember-me').checked) {
                         localStorage.setItem('rememberedUser', JSON.stringify({ rut: currentUser.rut, nombre: currentUser.nombre }));
                     }
@@ -696,6 +762,7 @@
                 const d = await check.json();
                 if (d.ok) {
                     showMsg('reg-success','✓ ¡Cuenta creada! Iniciando sesión...','success');
+                    await initKey(pass, normalizeRUT(rut));
                     setTimeout(() => {
                         currentUser = { rut: normalizeRUT(rut), nombre: d.nombre };
                         sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
@@ -783,6 +850,7 @@
             clearTimeout(lockoutTimer);
             lockoutUntil = 0;
             loginAttempts = 0;
+            clearKey();
             sessionStorage.removeItem('currentUser');
             currentUser = null;
             txs = []; debts = []; archives = []; catsInc = []; catsExp = []; catsSav = [];
@@ -822,6 +890,7 @@
         function doLogout() {
             if (confirm('¿Cerrar sesión?')) {
                 clearTimeout(inactivityTimer);
+                clearKey();
                 sessionStorage.removeItem('currentUser');
                 currentUser = null;
                 txs = []; debts = []; archives = []; catsInc = []; catsExp = []; catsSav = [];
@@ -887,9 +956,21 @@
             try {
                 const res = await fetch(`${WEB_APP_URL}?action=data&rut=${encodeURIComponent(currentUser.rut)}`);
                 const d = await res.json();
-                txs      = (d.txs      || []).map(t => ({...t, date: parseDate(t.date)}));
-                debts    = (d.debts    || []).map(t => ({...t, date: parseDate(t.date)}));
-                archives = (d.archives || []).map(a => ({...a, data: a.data.map(t => ({...t, date: parseDate(t.date)}))}));
+                txs = await Promise.all((d.txs || []).map(async t => ({
+                    ...t,
+                    date:   parseDate(t.date),
+                    text:   await dec(t.text),
+                    amount: +(await dec(t.amount)) || 0,
+                    cat:    await dec(t.cat),
+                    source: await dec(t.source),
+                })));
+                debts = await Promise.all((d.debts || []).map(async t => ({
+                    ...t,
+                    date:   parseDate(t.date),
+                    text:   await dec(t.text),
+                    amount: +(await dec(t.amount)) || 0,
+                })));
+                archives = (d.archives || []).map(a => ({...a, data: (a.data || []).map(t => ({...t, date: parseDate(t.date)}))}));
                 catsInc = d.catsInc || []; catsExp = d.catsExp || []; catsSav = d.catsSav || ['Emergencia', 'Viajes'];
                 updateUI();
             } catch (e) { console.error(e); }
@@ -899,7 +980,14 @@
         async function sync() {
             if (!currentUser) return;
             showToast('<span class="btn-spin" style="border-top-color:white;margin:0 4px 0 0;"></span> Guardando...', '');
-            const payload = { action: 'save', rut: currentUser.rut, data: { txs, debts, archives, catsInc, catsExp, catsSav } };
+            const encTxs = await Promise.all(txs.map(async t => ({
+                ...t, text: await enc(t.text), amount: await enc(t.amount),
+                cat: await enc(t.cat), source: await enc(t.source),
+            })));
+            const encDebts = await Promise.all(debts.map(async d => ({
+                ...d, text: await enc(d.text), amount: await enc(d.amount),
+            })));
+            const payload = { action: 'save', rut: currentUser.rut, data: { txs: encTxs, debts: encDebts, archives, catsInc, catsExp, catsSav } };
             try {
                 await fetch(WEB_APP_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                 setTimeout(() => {
@@ -1160,7 +1248,10 @@
                     document.getElementById('cfg-old-pin').value  = '';
                     document.getElementById('cfg-new-pin').value  = '';
                     document.getElementById('cfg-new-pin2').value = '';
-                    showMsg('cfg-pin-msg','✓ PIN cambiado exitosamente.','success');
+                    // Re-derivar clave con nuevo PIN y re-guardar datos cifrados con ella
+                    await initKey(newPin, currentUser.rut);
+                    await sync();
+                    showMsg('cfg-pin-msg','✓ PIN cambiado. Datos re-cifrados con nueva clave.','success');
                 } else { showMsg('cfg-pin-msg', d.error || 'PIN actual incorrecto.','error'); }
             } catch { showMsg('cfg-pin-msg','Error de conexión.','error'); }
             setBtnLoading('btn-change-pin', false);
