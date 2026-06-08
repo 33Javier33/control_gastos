@@ -36,8 +36,8 @@ function migrateToSupabase() {
 
     // Movimientos
     const txsRaw = movimientos.filter(r => String(r[0]).toUpperCase() === rut);
-    const txs = txsRaw.map(r => ({
-      id:       String(r[1]),
+    const txs = txsRaw.map((r, i) => ({
+      id:       String(r[1]) || ('gs_' + rut + '_tx_' + i),  // genera ID si está vacío
       date:     r[2] ? String(r[2]) : '',
       text:     String(r[3] || ''),
       amount:   Number(r[4]) || 0,
@@ -49,8 +49,8 @@ function migrateToSupabase() {
     // Deudas
     const userDebts = deudas
       .filter(r => String(r[0]).toUpperCase() === rut)
-      .map(r => ({
-        id:     String(r[1]),
+      .map((r, i) => ({
+        id:     String(r[1]) || ('gs_' + rut + '_dbt_' + i),
         date:   r[2] ? String(r[2]) : '',
         text:   String(r[3] || ''),
         amount: Number(r[4]) || 0
