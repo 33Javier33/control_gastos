@@ -3,13 +3,14 @@
  *
  * INSTRUCCIONES:
  * 1. Abre script.google.com → abre el proyecto de tu planilla de Control Financiero
- * 2. Crea un nuevo archivo (Archivo > Nuevo > Script) y pega este código
- * 3. Selecciona la función "migrateToSupabase" en el menú desplegable
- * 4. Haz clic en ▶ Ejecutar
- * 5. Acepta los permisos cuando te los pida
- * 6. Revisa el Log de Ejecución (Ver > Registros) para ver el resultado
+ * 2. Crea un archivo nuevo (Archivo > Nuevo > Script), nómbralo MigrateToSupabase
+ * 3. Pega este código completo
+ * 4. Selecciona "migrateToSupabase" en el menú y haz clic en ▶ Ejecutar
+ * 5. Acepta los permisos si te los pide
+ * 6. Revisa Ver > Registros de ejecución para ver el resultado
  *
- * Este script puede ejecutarse múltiples veces sin problema (no duplica datos).
+ * El script puede ejecutarse múltiples veces sin problema.
+ * Si falla, los datos en Sheets NO se tocan — solo Supabase.
  */
 
 function migrateToSupabase() {
@@ -33,20 +34,19 @@ function migrateToSupabase() {
     const nombre        = String(user[1]);
     const password_hash = String(user[2]);
 
-    // Movimientos del usuario
-    const txs = movimientos
-      .filter(r => String(r[0]).toUpperCase() === rut)
-      .map(r => ({
-        id:       String(r[1]),
-        date:     r[2] ? String(r[2]) : '',
-        text:     String(r[3] || ''),
-        amount:   Number(r[4]) || 0,
-        cat:      String(r[5] || ''),
-        source:   String(r[6] || ''),
-        isSaving: String(r[7]) === 'SI'
-      }));
+    // Movimientos
+    const txsRaw = movimientos.filter(r => String(r[0]).toUpperCase() === rut);
+    const txs = txsRaw.map(r => ({
+      id:       String(r[1]),
+      date:     r[2] ? String(r[2]) : '',
+      text:     String(r[3] || ''),
+      amount:   Number(r[4]) || 0,
+      cat:      String(r[5] || ''),
+      source:   String(r[6] || ''),
+      isSaving: String(r[7]) === 'SI'
+    }));
 
-    // Deudas del usuario
+    // Deudas
     const userDebts = deudas
       .filter(r => String(r[0]).toUpperCase() === rut)
       .map(r => ({
@@ -56,13 +56,13 @@ function migrateToSupabase() {
         amount: Number(r[4]) || 0
       }));
 
-    // Categorías del usuario
+    // Categorías
     const cats    = categorias.filter(r => String(r[0]).toUpperCase() === rut);
     const catsInc = cats.filter(r => r[1] === 'INC').sort((a,b) => a[3]-b[3]).map(r => String(r[2]));
     const catsExp = cats.filter(r => r[1] === 'EXP').sort((a,b) => a[3]-b[3]).map(r => String(r[2]));
     const catsSav = cats.filter(r => r[1] === 'SAV').sort((a,b) => a[3]-b[3]).map(r => String(r[2]));
 
-    // Archivos del usuario
+    // Archivos
     const arcs = archivos
       .filter(r => String(r[0]).toUpperCase() === rut)
       .map(r => {
@@ -70,10 +70,28 @@ function migrateToSupabase() {
         catch (_) { return { id: String(r[1]), period: String(r[2]), data: {} }; }
       });
 
-    Logger.log('→ Enviando ' + rut + ' (' + nombre + '): '
-      + txs.length + ' movimientos, '
+    // ── Diagnósticos ────────────────────────────────────────────────────────
+    Logger.log('→ ' + rut + ' (' + nombre + '): '
+      + txs.length + ' tx, '
       + userDebts.length + ' deudas, '
-      + (catsInc.length + catsExp.length + catsSav.length) + ' categorías');
+      + (catsInc.length + catsExp.length + catsSav.length) + ' cats');
+
+    // Detectar IDs vacíos o duplicados en movimientos
+    const ids = txs.map(t => t.id);
+    const emptyIds = ids.filter(id => !id || id === 'undefined' || id === '0').length;
+    if (emptyIds > 0) Logger.log('  ⚠️ ' + emptyIds + ' movimientos con ID vacío');
+
+    const idSet = new Set(ids);
+    if (idSet.size < ids.length) {
+      Logger.log('  ⚠️ IDs duplicados en movimientos: ' + (ids.length - idSet.size) + ' duplicados');
+      const counts = {};
+      ids.forEach(id => { counts[id] = (counts[id] || 0) + 1; });
+      const dupes = Object.entries(counts).filter(([_, n]) => n > 1).slice(0, 5);
+      Logger.log('  Ejemplos: ' + JSON.stringify(dupes));
+    }
+
+    if (ids.length > 0) Logger.log('  Primeros IDs: ' + ids.slice(0, 3).join(' | '));
+    // ────────────────────────────────────────────────────────────────────────
 
     const payload = {
       action: 'migrate',
@@ -94,14 +112,14 @@ function migrateToSupabase() {
       const text = response.getContentText();
 
       if (code === 200) {
-        let detail = '';
         try {
           const resp = JSON.parse(text);
-          if (resp.counts) {
-            detail = ' [server: ' + resp.counts.txs + ' tx, ' + resp.counts.debts + ' deudas, ' + resp.counts.cats + ' cats]';
-          }
-        } catch (_) {}
-        Logger.log('✓ ' + rut + ' OK' + detail);
+          const c = resp.counts || {};
+          Logger.log('✓ ' + rut + ' OK — servidor confirmó: '
+            + c.txs + ' tx, ' + c.debts + ' deudas, ' + c.cats + ' cats, ' + c.archives + ' archivos');
+        } catch (_) {
+          Logger.log('✓ ' + rut + ' OK');
+        }
         ok++;
       } else {
         Logger.log('✗ ' + rut + ' ERROR ' + code + ': ' + text);
