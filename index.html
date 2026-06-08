@@ -442,7 +442,7 @@
     </div>
 
     <script>
-        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyr1dMKKAbqnnVvyGCTxYBhii5hmSR39zoSdURBYCYR_PTYK81QjwUQHjQtFLSucaNlpg/exec";
+        const WEB_APP_URL = "https://lpulmjzboogixbdxxayo.supabase.co/functions/v1/api";
 
         // ── ESTADO GLOBAL ──
         let txs = [], debts = [], archives = [], catsInc = [], catsExp = [], catsSav = [];
@@ -691,8 +691,7 @@
             if (pass !== pass2) { showMsg('reg-error','Los PINs no coinciden.','error'); return; }
             setBtnLoading('btn-register', true);
             try {
-                await fetch(WEB_APP_URL, { method:'POST', mode:'no-cors', body:JSON.stringify({ action:'register', rut:normalizeRUT(rut), nombre, pass }) });
-                await new Promise(r => setTimeout(r, 1800));
+                await fetch(WEB_APP_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ action:'register', rut:normalizeRUT(rut), nombre, pass }) });
                 const check = await fetch(`${WEB_APP_URL}?action=login&rut=${encodeURIComponent(normalizeRUT(rut))}&pass=${encodeURIComponent(pass)}`);
                 const d = await check.json();
                 if (d.ok) {
@@ -902,7 +901,7 @@
             showToast('<span class="btn-spin" style="border-top-color:white;margin:0 4px 0 0;"></span> Guardando...', '');
             const payload = { action: 'save', rut: currentUser.rut, data: { txs, debts, archives, catsInc, catsExp, catsSav } };
             try {
-                await fetch(WEB_APP_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
+                await fetch(WEB_APP_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                 setTimeout(() => {
                     updateUI();
                     showToast('✓ Guardado', 'ok');
